@@ -18,3 +18,6 @@
 - [`fzf`](https://github.com/junegunn/fzf)
 
 ## Installation
+
+### Direct download
+`sudo wget -O /usr/bin/termv -q --show-progress https://raw.githubusercontent.com/Roshan-R/termv/main/termv && sudo chmod +x /usr/bin/termv`
