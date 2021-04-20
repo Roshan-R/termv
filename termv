@@ -4,10 +4,16 @@ VERSION=0.1
 
 CHANNEL_DIR="/home/`whoami`/.config/termv"
 
+FULL_SCREEN=false
+
 play(){
     if [[ -n "$1" ]]; then
         echo "please wait"
-        mpv $1 --fs --no-resume-playback
+        if [[ "$FULL_SCREEN" = true ]];then
+            mpv "$1" --fs --no-resume-playback
+        else
+            mpv "$1" --no-resume-playback
+        fi
     fi
 }
 
@@ -60,6 +66,8 @@ termv
 
 A command line program to watch tv online.
 
+-f, --full-screen 
+        Opens mpv in fullscreen
 -h, --help
         Show help
 --version
@@ -78,6 +86,7 @@ main(){
         case "$1" in
             --help | -h) usage && exit ;;
             --version | -v) version && exit ;;
+            --full-screen | -f) FULL_SCREEN=true && dep_check;;
             -*) print_error "option '$1' does not exist" ;;
         esac
         shift
