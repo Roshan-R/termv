@@ -8,7 +8,9 @@
   <img src="https://user-images.githubusercontent.com/43182697/115367690-0eed9a00-a1e4-11eb-999b-52529bf2fba1.gif">
 </p>
 
-`iptv` is a small bash script that allows you to select an iptv stream using `fzf` and play it using `mpv`.
+`termv` is a small bash script that allows you to select an iptv stream using `fzf` and play it using `mpv`.
+
+the list of channels is obtained from [https://github.com/iptv-org/iptv](https://github.com/iptv-org/iptv)
 
 
 ## Dependencies
