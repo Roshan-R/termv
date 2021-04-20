@@ -17,6 +17,20 @@
 - [`jq`](https://github.com/stedolan/jq)
 - [`fzf`](https://github.com/junegunn/fzf)
 
+## Usage
+
+```console
+termv
+
+A command line program to watch tv online.
+
+-h, --help
+        Show help
+--version
+        Show version
+
+```
+
 ## Installation
 
 ### Direct download
