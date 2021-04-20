@@ -35,7 +35,7 @@ dep_check(){
 
     if [[ ! -f channels.json ]];then 
         echo "Downloading channel list "; 
-        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json || print_error "Cannot download channel list" && exit
+        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json || print_error "Cannot download channel list" 
     fi
 
     select_channel
