@@ -5,7 +5,7 @@
 <p align="center"> A terminal iptv player written in written in bash</p><br>
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/43182697/115367690-0eed9a00-a1e4-11eb-999b-52529bf2fba1.gif">
+  <img src="https://user-images.githubusercontent.com/43182697/115673983-d6c49380-a36a-11eb-9b62-f7166adbb0e2.gif">
 </p>
 
 `termv` is a small bash script that allows you to select an iptv stream using `fzf` and play it using `mpv`.
