@@ -6,14 +6,13 @@ CHANNEL_DIR="/home/`whoami`/.config/termv"
 
 FULL_SCREEN=false
 
+MPV_FLAGS="--no-resume-playback"
+
 play(){
     if [[ -n "$1" ]]; then
         echo "please wait"
-        if [[ "$FULL_SCREEN" = true ]];then
-            mpv "$1" --fs --no-resume-playback
-        else
-            mpv "$1" --no-resume-playback
-        fi
+        [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
+        mpv "$1" $MPV_FLAGS
     fi
 }
 
@@ -41,7 +40,8 @@ dep_check(){
 
     if [[ ! -f channels.json ]];then 
         echo "Downloading channel list "; 
-        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json || print_error "Cannot download channel list" 
+        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json ||\
+            print_error "Cannot download channel list" 
     fi
 
     select_channel
