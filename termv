@@ -8,6 +8,12 @@ FULL_SCREEN=false
 
 MPV_FLAGS="--no-resume-playback"
 
+ROFI_COMMAND='rofi -dmenu -fuzzy -p "select a channel"'
+DMENU_COMMAND='dmenu -i -l 30'
+MENU_COMMAND="fzf"
+
+deps=(mpv fzf jq wget cat)
+
 play(){
     if [[ -n "$1" ]]; then
         echo "please wait"
@@ -17,7 +23,7 @@ play(){
 }
 
 select_channel(){
-    name=$(cat channels.json| jq ".[].name" | tr -d '"' | fzf);
+    name=$(cat channels.json| jq ".[].name" | tr -d '"' | eval "$MENU_COMMAND");
     var=".[] | select(.name==\"$name\") | .url"
     command="cat channels.json | jq '$var' "
     as=$(eval $command | tr -d '"' )
@@ -25,7 +31,6 @@ select_channel(){
 }
 
 dep_check(){
-    deps=(mpv fzf jq wget cat)
     for dep in ${deps[@]};do
         command -v "$dep" 1>/dev/null || missing="$missing $dep"
     done;
@@ -45,6 +50,14 @@ dep_check(){
     fi
 
     select_channel
+}
+
+ext_menu(){
+    [ -z "$TERMV_EXTMENU" ] && TERMV_EXTMENU="$DMENU_COMMAND"
+    [ "$2" == "--list" ] && echo -e "dmenu\nrofi" && exit 1
+    [ "$2" == "dmenu" ] && TERMV_EXTMENU="$DMENU_COMMAND" && deps=($deps dmenu)
+    [ "$2" == "rofi" ] && TERMV_EXTMENU="$ROFI_COMMAND" && deps=($deps rofi)
+    MENU_COMMAND="$TERMV_EXTMENU"
 }
 
 print_error() {
@@ -68,6 +81,9 @@ A command line program to watch tv online.
 
 -f, --full-screen 
         Opens mpv in fullscreen
+-D, --ext-menu <menu>
+        Use external menu(default dmenu) instead of fzf
+            --list for listing predefined menus
 -h, --help
         Show help
 --version
@@ -87,6 +103,7 @@ main(){
             --help | -h) usage && exit ;;
             --version | -v) version && exit ;;
             --full-screen | -f) FULL_SCREEN=true && dep_check;;
+            --ext-menu | -D) ext_menu "$@" && dep_check;;
             -*) print_error "option '$1' does not exist" ;;
         esac
         shift
