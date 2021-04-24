@@ -39,7 +39,7 @@ A command line program to watch tv online.
 
 ### Direct download
 ```sh
-sudo wget -O /usr/bin/termv -q --show-progress https://raw.githubusercontent.com/Roshan-R/termv/main/termv && sudo chmod +x /usr/bin/termv
+wget -O /usr/local/bin/termv -q --show-progress https://raw.githubusercontent.com/Roshan-R/termv/main/termv && chmod +x /usr/local/bin/termv
 ```
 
 ### Installation by cloning the repository
