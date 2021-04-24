@@ -17,11 +17,13 @@ play(){
 }
 
 select_channel(){
-    name=$(cat channels.json| jq ".[].name" | tr -d '"' | fzf);
-    var=".[] | select(.name==\"$name\") | .url"
-    command="cat channels.json | jq '$var' "
-    as=$(eval $command | tr -d '"' )
-    play $as
+    local fzf_opts=(--cycle --header="Select channel (Press Escape to exit)")
+    local name var
+    while name=$(cat channels.json | jq ".[].name" | tr -d '"' |\
+                 sort | fzf "${fzf_opts[@]}"); do
+        var=".[] | select(.name==\"$name\") | .url"
+        play "$(cat channels.json | jq "$var" | tr -d '"')"
+    done
 }
 
 dep_check(){
