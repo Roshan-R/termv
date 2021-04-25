@@ -2,7 +2,7 @@
 
 VERSION=0.1
 
-CHANNEL_DIR="/home/`whoami`/.config/termv"
+CHANNEL_DIR="$HOME/.config/termv"
 
 FULL_SCREEN=false
 
