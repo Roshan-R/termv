@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=0.1
+VERSION=1.0
 
 CHANNEL_DIR="$HOME/.config/termv"
 
