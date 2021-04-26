@@ -2,7 +2,7 @@
   termv
 </h1>
 
-<p align="center"> A terminal iptv player written in written in bash</p><br>
+<p align="center">A terminal iptv player written in bash</p><br>
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/43182697/115673983-d6c49380-a36a-11eb-9b62-f7166adbb0e2.gif">
@@ -59,6 +59,12 @@ sudo make install
 
 ```sh
 sudo make uninstall
+```
+
++ **Arch Linux: Install from the AUR (with your preferred AUR helper)**
+
+```sh
+yay -S termv-git
 ```
 
 ## Credits
