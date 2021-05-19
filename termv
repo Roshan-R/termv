@@ -12,17 +12,21 @@ play(){
     if [[ -n "$1" ]]; then
         echo "please wait"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        mpv "$1" $MPV_FLAGS
+        if type devour >/dev/null; then
+            devour mpv "$1" $MPV_FLAGS
+        else
+            mpv "$1" $MPV_FLAGS
+        fi
     fi
 }
 
 select_channel(){
     local fzf_opts=(--cycle --header="Select channel (Press Escape to exit)")
     local name var
-    while name=$(cat channels.json | jq ".[].name" | tr -d '"' |\
+    while name=$(cat "$CHANNEL_DIR"/channels.json | jq ".[].name" | tr -d '"' |\
                  sort | fzf "${fzf_opts[@]}"); do
         var=".[] | select(.name==\"$name\") | .url"
-        play "$(cat channels.json | jq "$var" | tr -d '"')"
+        play "$(cat $CHANNEL_DIR/channels.json | jq "$var" | tr -d '"')"
     done
 }
 
@@ -38,11 +42,10 @@ dep_check(){
     fi
 
     mkdir -p "$CHANNEL_DIR"
-    cd "$CHANNEL_DIR"
 
-    if [[ ! -f channels.json ]];then 
+    if [[ ! -f "$CHANNEL_DIR"/channels.json ]];then 
         echo "Downloading channel list "; 
-        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json ||\
+        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -o "$CHANNEL_DIR"/channels.json ||\
             print_error "Cannot download channel list" 
     fi
 
