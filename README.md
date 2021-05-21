@@ -18,6 +18,7 @@ the list of channels is obtained from [https://github.com/iptv-org/iptv](https:/
 - `mpv`
 - [`jq`](https://github.com/stedolan/jq)
 - [`fzf`](https://github.com/junegunn/fzf)
+- `xdo` (optional, for `-s` flag)
 
 ## Usage
 

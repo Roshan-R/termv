@@ -14,7 +14,7 @@ play(){
     if [ -n "$1" ]; then
         printf "Fetching channel, please wait"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        if [ "$DEVOUR" = true ]; then
+        if type xdo >/dev/null && [ "$DEVOUR" = true ]; then
             WID=$(xdo id)
             xdo hide
             mpv "$1" $MPV_FLAGS
@@ -41,11 +41,21 @@ dep_check(){
         command -v "$dep" 1>/dev/null || missing="$missing $dep"
     done;
 
+    deps_extra=(xdo)
+    for depext in ${deps_extra[@]}; do
+        command -v "$depext" 1>/dev/null || missing_extra="$missing_extra $depext"
+    done;   
+
     if [ -n "$missing" ]; then
         printf "Please install missing dep(s):$missing\n";
         exit 1
     fi
 
+    if [ -n "$missing_extra" ] && [ "$DEVOUR" = true ]; then
+        printf "Please install missing dependency for -s mode:$missing_extra\n";
+        exit 1
+    fi
+    
     mkdir -p "${CHANNEL_FILE%channels.json}"
 
     if [[ ! -f "$CHANNEL_FILE" ]];then 
