@@ -16,12 +16,11 @@ play(){
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
         if type devour >/dev/null && [ "$DEVOUR" = true ]; then
             WID=$(xdo id)
-
-            $SHELL -i -c "xdo hide
-            mpv '$1'  $MPV_FLAGS
-            xdo show $WID"
+            xdo hide
+            mpv "$1" $MPV_FLAGS
+            xdo show $WID
         else
-            mpv '$1' $MPV_FLAGS
+            mpv "$1" $MPV_FLAGS
         fi
     fi
 }
