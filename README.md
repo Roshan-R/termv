@@ -27,7 +27,7 @@ termv
 A command line program to watch TV online.
 
 -f, --full-screen 
-        Opens mpv in fullscreen
+        Open mpv in fullscreen
 -h, --help
         Show help
 -s, --swallow
