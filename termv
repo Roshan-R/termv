@@ -18,10 +18,10 @@ play(){
             WID=$(xdo id)
 
             $SHELL -i -c "xdo hide
-            mpv "$1" $MPV_FLAGS
+            mpv '$1'  $MPV_FLAGS
             xdo show $WID"
         else
-            mpv "$1" $MPV_FLAGS
+            mpv '$1' $MPV_FLAGS
         fi
     fi
 }
@@ -42,18 +42,8 @@ dep_check(){
         command -v "$dep" 1>/dev/null || missing="$missing $dep"
     done;
 
-    deps_extra=(devour)
-    for depext in ${deps_extra[@]}; do
-        command -v "$depext" 1>/dev/null || missing_extra="$missing_extra $depext"
-    done;   
-
     if [ -n "$missing" ]; then
         printf "Please install missing dep(s):$missing\n";
-        exit 1
-    fi
-
-    if [ -n "$missing_extra" ] && [ "$DEVOUR" = true ]; then
-        printf "Please install missing dependency for -s mode:$missing_extra\n";
         exit 1
     fi
 
