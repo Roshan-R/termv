@@ -14,7 +14,7 @@ play(){
     if [ -n "$1" ]; then
         echo "please wait"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        if type devour >/dev/null && [ "$DEVOUR" = true ]; then
+        if [ "$DEVOUR" = true ]; then
             WID=$(xdo id)
             xdo hide
             mpv "$1" $MPV_FLAGS
