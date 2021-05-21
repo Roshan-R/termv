@@ -81,8 +81,8 @@ A command line program to watch TV online.
 -h, --help
         Show help
 -s, --swallow
-        Swallow terminal when mpv opens
-        based on devour, https://github.com/salman-abedin/devour
+        Swallow terminal during playback (X11 only)
+        based on devour, https://github.com/salman-abedin/devour.sh
 -v, --version
         Show version
 EOF
