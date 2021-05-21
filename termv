@@ -14,13 +14,13 @@ play(){
     if [ -n "$1" ]; then
         printf "Fetching channel, please wait"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        if type xdo >/dev/null && [ "$DEVOUR" = true ]; then
+        if type xdo >/dev/null 2>&1 && [ "$DEVOUR" = true ]; then
             WID=$(xdo id)
             xdo hide
-            mpv "$1" $MPV_FLAGS
-            xdo show $WID
+            mpv "$1" "$MPV_FLAGS"
+            xdo show $WID && xdo activate $WID
         else
-            mpv "$1" $MPV_FLAGS
+            mpv "$1" "$MPV_FLAGS"
         fi
     fi
 }
@@ -52,7 +52,7 @@ dep_check(){
     fi
 
     if [ -n "$missing_extra" ] && [ "$DEVOUR" = true ]; then
-        printf "Please install missing dependency for -s mode:$missing_extra\n";
+        printf "Please install missing dependency for -s flag:$missing_extra\n";
         exit 1
     fi
     
