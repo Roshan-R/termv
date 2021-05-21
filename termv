@@ -12,7 +12,7 @@ MPV_FLAGS="--no-resume-playback"
 
 play(){
     if [ -n "$1" ]; then
-        echo "please wait"
+        printf "Fetching channel, please wait"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
         if [ "$DEVOUR" = true ]; then
             WID=$(xdo id)
@@ -26,7 +26,7 @@ play(){
 }
 
 select_channel(){
-    local fzf_opts=(--cycle --header="Select channel (Press Escape to exit)")
+    local fzf_opts=(--cycle --header="Select channel (press Escape to exit)")
     local name var
     while name=$(cat "$CHANNEL_FILE" | jq ".[].name" | tr -d '"' |\
                  sort | fzf "${fzf_opts[@]}"); do
@@ -49,7 +49,7 @@ dep_check(){
     mkdir -p "${CHANNEL_FILE%channels.json}"
 
     if [[ ! -f "$CHANNEL_FILE" ]];then 
-        echo "Downloading channel list "; 
+        printf "Downloading channel list "; 
         wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -O "$CHANNEL_FILE" ||\
             print_error "Cannot download channel list" 
     fi
@@ -89,7 +89,7 @@ EOF
 }
 
 version(){
-    echo "termv $VERSION"
+    printf "termv $VERSION"
 }
 
 main(){
