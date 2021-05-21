@@ -2,18 +2,24 @@
 
 VERSION=1.0
 
-CHANNEL_DIR="$HOME/.config/termv"
+CHANNEL_FILE="$HOME/.config/termv/channels.json"
 
 FULL_SCREEN=false
+
+DEVOUR=false
 
 MPV_FLAGS="--no-resume-playback"
 
 play(){
-    if [[ -n "$1" ]]; then
+    if [ -n "$1" ]; then
         echo "please wait"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        if type devour >/dev/null; then
-            devour mpv "$1" $MPV_FLAGS
+        if type devour >/dev/null && [ "$DEVOUR" = true ]; then
+            WID=$(xdo id)
+
+            $SHELL -i -c "xdo hide
+            mpv "$1" $MPV_FLAGS
+            xdo show $WID"
         else
             mpv "$1" $MPV_FLAGS
         fi
@@ -23,29 +29,39 @@ play(){
 select_channel(){
     local fzf_opts=(--cycle --header="Select channel (Press Escape to exit)")
     local name var
-    while name=$(cat "$CHANNEL_DIR"/channels.json | jq ".[].name" | tr -d '"' |\
+    while name=$(cat "$CHANNEL_FILE" | jq ".[].name" | tr -d '"' |\
                  sort | fzf "${fzf_opts[@]}"); do
         var=".[] | select(.name==\"$name\") | .url"
-        play "$(cat $CHANNEL_DIR/channels.json | jq "$var" | tr -d '"')"
+        play "$(cat $CHANNEL_FILE | jq "$var" | tr -d '"')"
     done
 }
 
 dep_check(){
     deps=(mpv fzf jq wget cat)
-    for dep in ${deps[@]};do
+    for dep in ${deps[@]}; do
         command -v "$dep" 1>/dev/null || missing="$missing $dep"
     done;
 
-    if [[ -n "$missing" ]]; then
-        echo "$missing not found, Please install it";
+    deps_extra=(devour)
+    for depext in ${deps_extra[@]}; do
+        command -v "$depext" 1>/dev/null || missing_extra="$missing_extra $depext"
+    done;   
+
+    if [ -n "$missing" ]; then
+        printf "Please install missing dep(s):$missing\n";
         exit 1
     fi
 
-    mkdir -p "$CHANNEL_DIR"
+    if [ -n "$missing_extra" ] && [ "$DEVOUR" = true ]; then
+        printf "Please install missing dependency for -s mode:$missing_extra\n";
+        exit 1
+    fi
 
-    if [[ ! -f "$CHANNEL_DIR"/channels.json ]];then 
+    mkdir -p "${CHANNEL_FILE%channels.json}"
+
+    if [[ ! -f "$CHANNEL_FILE" ]];then 
         echo "Downloading channel list "; 
-        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -O "$CHANNEL_DIR"/channels.json ||\
+        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -O "$CHANNEL_FILE" ||\
             print_error "Cannot download channel list" 
     fi
 
@@ -69,13 +85,16 @@ usage() {
     cat <<EOF
 termv
 
-A command line program to watch tv online.
+A command line program to watch TV online.
 
 -f, --full-screen 
         Opens mpv in fullscreen
 -h, --help
         Show help
---version
+-s, --swallow
+        Swallow terminal when mpv opens
+        based on devour, https://github.com/salman-abedin/devour
+-v, --version
         Show version
 EOF
 }
@@ -92,6 +111,7 @@ main(){
             --help | -h) usage && exit ;;
             --version | -v) version && exit ;;
             --full-screen | -f) FULL_SCREEN=true && dep_check;;
+            --swallow | -s) DEVOUR=true && dep_check;;
             -*) print_error "option '$1' does not exist" ;;
         esac
         shift
