@@ -12,7 +12,7 @@ MPV_FLAGS="--no-resume-playback"
 
 play(){
     if [ -n "$1" ]; then
-        printf "Fetching channel, please wait"
+        printf "Fetching channel, please wait...\n"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
         if type xdo >/dev/null 2>&1 && [ "$DEVOUR" = true ]; then
             WID=$(xdo id)
@@ -59,7 +59,7 @@ dep_check(){
     mkdir -p "${CHANNEL_FILE%channels.json}"
 
     if [[ ! -f "$CHANNEL_FILE" ]];then 
-        printf "Downloading channel list "; 
+        printf "Downloading channel list...\n";
         wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -O "$CHANNEL_FILE" ||\
             print_error "Cannot download channel list" 
     fi
