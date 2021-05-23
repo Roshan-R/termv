@@ -6,7 +6,7 @@ CHANNEL_FILE="$HOME/.config/termv/channels.json"
 
 FULL_SCREEN=false
 
-DEVOUR=false
+SWALLOW=false
 
 MPV_FLAGS="--no-resume-playback"
 
@@ -14,7 +14,7 @@ play(){
     if [ -n "$1" ]; then
         printf "Fetching channel, please wait...\n"
         [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        if type xdo >/dev/null 2>&1 && [ "$DEVOUR" = true ]; then
+        if type xdo >/dev/null 2>&1 && [ "$SWALLOW" = true ]; then
             WID=$(xdo id)
             xdo hide
             mpv "$1" "$MPV_FLAGS" --force-window=immediate
@@ -51,7 +51,7 @@ dep_check(){
         exit 1
     fi
 
-    if [ -n "$missing_extra" ] && [ "$DEVOUR" = true ]; then
+    if [ -n "$missing_extra" ] && [ "$SWALLOW" = true ]; then
         printf "Please install missing dependency for -s flag:$missing_extra\n";
         exit 1
     fi
@@ -110,7 +110,7 @@ main(){
             --help | -h) usage && exit ;;
             --version | -v) version && exit ;;
             --full-screen | -f) FULL_SCREEN=true && dep_check;;
-            --swallow | -s) DEVOUR=true && dep_check;;
+            --swallow | -s) SWALLOW=true && dep_check;;
             -*) print_error "option '$1' does not exist" ;;
         esac
         shift
