@@ -17,7 +17,7 @@ play(){
         if type xdo >/dev/null 2>&1 && [ "$DEVOUR" = true ]; then
             WID=$(xdo id)
             xdo hide
-            mpv "$1" "$MPV_FLAGS"
+            mpv "$1" "$MPV_FLAGS" --force-window=immediate
             xdo show $WID && xdo activate $WID
         else
             mpv "$1" "$MPV_FLAGS"
