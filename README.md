@@ -18,21 +18,24 @@ the list of channels is obtained from [https://github.com/iptv-org/iptv](https:/
 - `mpv`
 - [`jq`](https://github.com/stedolan/jq)
 - [`fzf`](https://github.com/junegunn/fzf)
+- `xdo` (optional, for `-s` flag)
 
 ## Usage
 
 ```console
 termv
 
-A command line program to watch tv online.
+A command line program to watch TV online.
 
 -f, --full-screen 
-        Opens mpv in fullscreen
+        Open mpv in fullscreen
 -h, --help
         Show help
---version
+-s, --swallow
+        Swallow terminal during playback (X11 only)
+        based on devour, https://github.com/salman-abedin/devour.sh
+-v, --version
         Show version
-
 ```
 
 ## Installation
