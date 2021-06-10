@@ -35,7 +35,7 @@ pemx() {
 }
 
 usage() {
-    pht "Usage:   termv [options] [channelname]"
+    pht "Usage:   termv -option [filter]"
     pht
     pht "Options:"
 
@@ -61,6 +61,7 @@ update_channefile(){
     newetag=$(cat "$etagPath")
     if [ $downloaded -eq 1 ] && [ "$newetag" = "$oldetag" ]; then
         printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
+        touch "${termv_cache_dir}/data.json"
     elif [ $downloaded -eq 1 ]; then
         printf '\033[32;1m %s \033[0m\n' "DONE !!" ;
     elif [ $downloaded -eq 0 ]; then
@@ -69,7 +70,7 @@ update_channefile(){
 }
 
 # check if necessary programs are installed
-for prog in mpv fzf jq wget cat; do
+for prog in mpv fzf jq curl cat; do
      ! has "$prog" && dependences_not_installed="$dependences_not_installed$prog, "
 done
 
@@ -93,7 +94,7 @@ done
 [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
 
 # update channel list if it's older than one day
-if [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] ;then
+if [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] ; then
     update_channefile
 fi
 
