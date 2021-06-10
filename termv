@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-VERSION=1.0
+termv_version=1.1
 
-CHANNEL_FILE="$HOME/.config/termv/channels.json"
+termv_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
+
+channels_url="https://iptv-org.github.io/iptv/channels.json"
 
 FULL_SCREEN=false
 
@@ -10,111 +12,116 @@ SWALLOW=false
 
 MPV_FLAGS="--no-resume-playback"
 
-play(){
+mkdir -p "${termv_cache_dir}"
+
+# check if app installed ; ignores aliases
+has() {
+    case "$(command -v "$1" 2>/dev/null)" in
+        alias*|"") return 1
+    esac
+}
+
+phi() {
+    >&2 printf "    %s , %s %s\n" "$1" "$2" "$3"
+}
+
+pht() {
+    >&2 printf "%s\n" "$@"
+}
+
+# print error message & exit
+pemx() {
+    >&2 printf '\033[31;1merror :\033[m %s\n' "$@" && exit 1
+}
+
+usage() {
+    pht "Usage:   termv [options] [channelname]"
+    pht
+    pht "Options:"
+
+    phi -h "--help       " "Print this help text and exit"
+    phi -v "--version    " "Print program version and exit"
+    phi -u "--update     " "Update channel list to latest version."
+    phi -f "--full-screen" "open mpv in fullscreen"
+    phi -s "--swallow    " "Swallow terminal during playback (X11 only) based on devour; https://github.com/salman-abedin/devour.sh"
+}
+
+version(){
+    pht "termv ${termv_version}"
+}
+
+update_channefile(){
+    etagPath="${termv_cache_dir}/etag"
+    printf '%s' "Downloading ${channels_url:?}... "
+    [ -f "$etagPath" ] && oldetag=$(cat "$etagPath") || oldetag="null"
+
+    curl -s "${channels_url}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${termv_cache_dir}/data.json" \
+    -H "accept-encoding:gzip" --compressed  && downloaded=1 || downloaded=0
+
+    newetag=$(cat "$etagPath")
+    if [ $downloaded -eq 1 ] && [ "$newetag" = "$oldetag" ]; then
+        printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
+    elif [ $downloaded -eq 1 ]; then
+        printf '\033[32;1m %s \033[0m\n' "DONE !!" ;
+    elif [ $downloaded -eq 0 ]; then
+        printf '\033[31;1m %s \033[0m\n' "Fail !!" && rm -f "$etagPath" && exit 1
+    fi
+}
+
+# check if necessary programs are installed
+for prog in mpv fzf jq wget cat; do
+     ! has "$prog" && dependences_not_installed="$dependences_not_installed$prog, "
+done
+
+[ -n "${dependences_not_installed}" ] && pemx "You have missing dependencies. you need to install: ${dependences_not_installed::-2}."
+
+while [ "$1" ]; do
+    case "$1" in
+        -h|--help) usage && exit 0 ;;
+        -v|--version) version && exit 0 ;;
+        -u|--update)  update_channefile ; exit;;
+        -f|--full-screen) FULL_SCREEN=true ; shift;;
+        -s|--swallow )    SWALLOW=true     ; shift;;
+        *) query="$query $1" ; shift;;
+    esac
+done
+
+[ -z "$query" ] && query=""
+
+[ "${SWALLOW}" = true ] && { ! has "xdo" && pemx "You have a missing dependencie for -s flag. you need to install: xdo."; }
+
+[ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
+
+# update channel list if it's older than one day
+if [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] ;then
+    update_channefile
+fi
+
+play()(
     if [ -n "$1" ]; then
-        printf "Fetching channel, please wait...\n"
-        [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        if type xdo >/dev/null 2>&1 && [ "$SWALLOW" = true ]; then
+        pht "Fetching channel, please wait..."
+        if [ "$SWALLOW" = true ]; then
             WID=$(xdo id)
             xdo hide
             mpv "$1" "$MPV_FLAGS" --force-window=immediate
-            xdo show $WID && xdo activate $WID
+            xdo show "$WID" && xdo activate "$WID"
         else
             mpv "$1" "$MPV_FLAGS"
         fi
     fi
-}
-
-select_channel(){
-    local fzf_opts=(--cycle --header="Select channel (press Escape to exit)")
-    local name var
-    while name=$(cat "$CHANNEL_FILE" | jq ".[].name" | tr -d '"' |\
-                 sort | fzf "${fzf_opts[@]}"); do
-        var=".[] | select(.name==\"$name\") | .url"
-        play "$(cat $CHANNEL_FILE | jq "$var" | tr -d '"')"
-    done
-}
-
-dep_check(){
-    deps=(mpv fzf jq wget cat)
-    for dep in ${deps[@]}; do
-        command -v "$dep" 1>/dev/null || missing="$missing $dep"
-    done;
-
-    deps_extra=(xdo)
-    for depext in ${deps_extra[@]}; do
-        command -v "$depext" 1>/dev/null || missing_extra="$missing_extra $depext"
-    done;   
-
-    if [ -n "$missing" ]; then
-        printf "Please install missing dep(s):$missing\n";
-        exit 1
-    fi
-
-    if [ -n "$missing_extra" ] && [ "$SWALLOW" = true ]; then
-        printf "Please install missing dependency for -s flag:$missing_extra\n";
-        exit 1
-    fi
-    
-    mkdir -p "${CHANNEL_FILE%channels.json}"
-
-    if [[ ! -f "$CHANNEL_FILE" ]];then 
-        printf "Downloading channel list...\n";
-        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -O "$CHANNEL_FILE" ||\
-            print_error "Cannot download channel list" 
-    fi
-
-    select_channel
-}
-
-print_error() {
-    # Print error message
-    #
-    # The first argument provided to this function will be the error message.
-    # Script will exit after printing the error message.
-    printf "%b\n" "Error: $1" >&2
-    exit 1
-}
-
-usage() {
-    # Using 'cat << EOF' we can easily output a multiline text. This is much
-    # better than using 'echo' for each line or using '\n' to create a new line.
-
-
-    cat <<EOF
-termv
-
-A command line program to watch TV online.
-
--f, --full-screen 
-        Open mpv in fullscreen
--h, --help
-        Show help
--s, --swallow
-        Swallow terminal during playback (X11 only)
-        based on devour, https://github.com/salman-abedin/devour.sh
--v, --version
-        Show version
-EOF
-}
-
-version(){
-    printf "termv $VERSION"
-}
+)
 
 main(){
-    [ $# -eq 0 ] && dep_check && exit
+    while :; do
+        m3u8_url=$(jq -r '.[] | "\(.name)  [\(.category)]  [\(.languages|.[0].name)]  [\(.countries|.[0].name)]  \(.url)"' "${termv_cache_dir}/data.json" | \
+                fzf --cycle --header="Select channel (press Escape to exit)" --with-nth='1..-2' -e -i -q "$@" | \
+                awk '{print $NF}' \
+                )
 
-    while [ "$1" ]; do
-        case "$1" in
-            --help | -h) usage && exit ;;
-            --version | -v) version && exit ;;
-            --full-screen | -f) FULL_SCREEN=true && dep_check;;
-            --swallow | -s) SWALLOW=true && dep_check;;
-            -*) print_error "option '$1' does not exist" ;;
-        esac
-        shift
+        [ -z "$m3u8_url" ] && exit 0
+
+        play "$m3u8_url"
     done
 }
 
-main "$@"
+main "$query"
