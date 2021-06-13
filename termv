@@ -50,22 +50,26 @@ version(){
     pht "termv ${termv_version}"
 }
 
-update_channefile(){
+update_channelsfile(){
     etagPath="${termv_cache_dir}/etag"
     printf '%s' "Downloading ${channels_url:?}... "
     [ -f "$etagPath" ] && oldetag=$(cat "$etagPath") || oldetag="null"
 
-    curl -s "${channels_url}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${termv_cache_dir}/data.json" \
+    curl -s "${channels_url}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${termv_cache_dir}/data.json_new" \
     -H "accept-encoding:gzip" --compressed  && downloaded=1 || downloaded=0
 
     newetag=$(cat "$etagPath")
     if [ $downloaded -eq 1 ] && [ "$newetag" = "$oldetag" ]; then
+        touch "${termv_cache_dir}/data.json" ;
         printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
-        touch "${termv_cache_dir}/data.json"
     elif [ $downloaded -eq 1 ]; then
+        mv -f "${termv_cache_dir}/data.json_new" "${termv_cache_dir}/data.json"
         printf '\033[32;1m %s \033[0m\n' "DONE !!" ;
     elif [ $downloaded -eq 0 ]; then
-        printf '\033[31;1m %s \033[0m\n' "Fail !!" && rm -f "$etagPath" && exit 1
+        rm -f "$etagPath" "${termv_cache_dir}/data.json_new"
+        echo "$oldetag" > "$etagPath"
+        printf '\033[31;1m %s \033[0m\n' "Fail !!"
+        exit 1
     fi
 }
 
@@ -80,7 +84,7 @@ while [ "$1" ]; do
     case "$1" in
         -h|--help) usage && exit 0 ;;
         -v|--version) version && exit 0 ;;
-        -u|--update)  update_channefile ; exit;;
+        -u|--update)  update_channelsfile ; exit;;
         -f|--full-screen) FULL_SCREEN=true ; shift;;
         -s|--swallow )    SWALLOW=true     ; shift;;
         *) query="$query $1" ; shift;;
@@ -95,7 +99,7 @@ done
 
 # update channel list if it's older than one day
 if [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] ; then
-    update_channefile
+    update_channelsfile
 fi
 
 play()(
