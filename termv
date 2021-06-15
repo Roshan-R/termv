@@ -118,8 +118,8 @@ play()(
 
 main(){
     while :; do
-        m3u8_url=$(jq -r '.[] | "\(.name)  [\(.category)]  [\(.languages|.[0].name)]  [\(.countries|.[0].name)]  \(.url)"' "${termv_cache_dir}/data.json" | \
-                fzf --cycle --header="Select channel (press Escape to exit)" --with-nth='1..-2' -e -i -q "$@" | \
+        m3u8_url=$(jq -r '.[] | "\(.name) \t [\(.category)]  [\(.languages|.[0].name)]  [\(.countries|.[0].name)]  \(.url)"' "${termv_cache_dir}/data.json" | \
+                fzf -e -i --reverse --cycle --with-nth='1..-2' --tabstop=40 --header="Select channel (press Escape to exit)" -q "$@" | \
                 awk '{print $NF}' \
                 )
 
