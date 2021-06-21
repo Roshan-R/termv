@@ -17,10 +17,10 @@ play(){
         if type xdo >/dev/null 2>&1 && [ "$SWALLOW" = true ]; then
             WID=$(xdo id)
             xdo hide
-            mpv "$1" "$MPV_FLAGS" --force-window=immediate
+            mpv "$1" "$MPV_FLAGS" --force-window=immediate --force-media-title="$name"
             xdo show $WID && xdo activate $WID
         else
-            mpv "$1" "$MPV_FLAGS"
+            mpv "$1" "$MPV_FLAGS" --force-media-title="$name"
         fi
     fi
 }
@@ -44,7 +44,7 @@ dep_check(){
     deps_extra=(xdo)
     for depext in ${deps_extra[@]}; do
         command -v "$depext" 1>/dev/null || missing_extra="$missing_extra $depext"
-    done;   
+    done;
 
     if [ -n "$missing" ]; then
         printf "Please install missing dep(s):$missing\n";
@@ -55,13 +55,13 @@ dep_check(){
         printf "Please install missing dependency for -s flag:$missing_extra\n";
         exit 1
     fi
-    
+
     mkdir -p "${CHANNEL_FILE%channels.json}"
 
-    if [[ ! -f "$CHANNEL_FILE" ]];then 
+    if [[ ! -f "$CHANNEL_FILE" ]];then
         printf "Downloading channel list...\n";
         wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -O "$CHANNEL_FILE" ||\
-            print_error "Cannot download channel list" 
+            print_error "Cannot download channel list"
     fi
 
     select_channel
@@ -86,7 +86,7 @@ termv
 
 A command line program to watch TV online.
 
--f, --full-screen 
+-f, --full-screen
         Open mpv in fullscreen
 -h, --help
         Show help
