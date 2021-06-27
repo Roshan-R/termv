@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 VERSION=1.1
 
@@ -12,7 +12,7 @@ SWALLOW=false
 
 MPV_FLAGS="--no-resume-playback"
 
-mkdir -p "${termv_cache_dir}"
+mkdir -p "${termv_cache_dir:?}"
 
 # check if app installed ; ignores aliases
 has() {
@@ -47,27 +47,27 @@ usage() {
 }
 
 version(){
-    pht "termv ${termv_version}"
+    pht "termv ${VERSION}"
 }
 
 update_channelsfile(){
-    etagPath="${termv_cache_dir}/etag"
+    etagPath="${termv_cache_dir:?}/etag"
     printf '%s' "Downloading ${channels_url:?}... "
-    [ -f "$etagPath" ] && oldetag=$(cat "$etagPath") || oldetag="null"
+    [ -f "${etagPath:?}" ] && oldetag=$(cat "${etagPath}") || oldetag="null"
 
     curl -s "${channels_url}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${termv_cache_dir}/data.json_new" \
-    -H "accept-encoding:gzip" --compressed  && downloaded=1 || downloaded=0
+    -H "accept-encoding:gzip" --compressed && downloaded=1 || downloaded=0
 
-    newetag=$(cat "$etagPath")
-    if [ $downloaded -eq 1 ] && [ "$newetag" = "$oldetag" ]; then
-        touch "${termv_cache_dir}/data.json" ;
+    newetag=$(cat "${etagPath}")
+    if [ ${downloaded} -eq 1 ] && [ "${newetag}" = "${oldetag}" ]; then
+        touch "${termv_cache_dir:?}/data.json" ;
         printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
-    elif [ $downloaded -eq 1 ]; then
-        mv -f "${termv_cache_dir}/data.json_new" "${termv_cache_dir}/data.json"
+    elif [ ${downloaded} -eq 1 ]; then
+        mv -f "${termv_cache_dir:?}/data.json_new" "${termv_cache_dir:?}/data.json"
         printf '\033[32;1m %s \033[0m\n' "DONE !!" ;
-    elif [ $downloaded -eq 0 ]; then
-        rm -f "$etagPath" "${termv_cache_dir}/data.json_new"
-        echo "$oldetag" > "$etagPath"
+    elif [ ${downloaded} -eq 0 ]; then
+        rm -f "${etagPath:?}" "${termv_cache_dir:?}/data.json_new"
+        echo "${oldetag}" > "${etagPath}"
         printf '\033[31;1m %s \033[0m\n' "Fail !!"
         exit 1
     fi
@@ -75,10 +75,10 @@ update_channelsfile(){
 
 # check if necessary programs are installed
 for prog in mpv fzf jq curl cat; do
-     ! has "$prog" && dependences_not_installed="$dependences_not_installed$prog, "
+     ! has "$prog" && dependences_not_installed="${dependences_not_installed}${prog}, "
 done
 
-[ -n "${dependences_not_installed}" ] && pemx "You have missing dependencies. you need to install: ${dependences_not_installed::-2}."
+[ -n "${dependences_not_installed}" ] && pemx "You have missing dependencies. you need to install: ${dependences_not_installed%??}."
 
 while [ "$1" ]; do
     case "$1" in
@@ -87,15 +87,15 @@ while [ "$1" ]; do
         -u|--update)  update_channelsfile ; exit;;
         -f|--full-screen) FULL_SCREEN=true ; shift;;
         -s|--swallow )    SWALLOW=true     ; shift;;
-        *) query="$query $1" ; shift;;
+        *) query="${query}$1 " ; shift;;
     esac
 done
 
-[ -z "$query" ] && query=""
+[ -z "${query}" ] && query=""
 
 [ "${SWALLOW}" = true ] && { ! has "xdo" && pemx "You have a missing dependencie for -s flag. you need to install: xdo."; }
 
-[ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
+[ "${FULL_SCREEN}" = true ] && MPV_FLAGS="${MPV_FLAGS} --fs"
 
 # update channel list if it's older than one day
 if [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] ; then
@@ -105,13 +105,13 @@ fi
 play()(
     if [ -n "$1" ]; then
         pht "Fetching channel, please wait..."
-        if [ "$SWALLOW" = true ]; then
+        if [ "${SWALLOW}" = true ]; then
             WID=$(xdo id)
             xdo hide
-            mpv "$1" "$MPV_FLAGS" --force-window=immediate
+            mpv "$1" ${MPV_FLAGS} --force-window=immediate
             xdo show "$WID" && xdo activate "$WID"
         else
-            mpv "$1" "$MPV_FLAGS"
+            mpv "$1" ${MPV_FLAGS}
         fi
     fi
 )
@@ -123,9 +123,9 @@ main(){
                 awk '{print $NF}' \
                 )
 
-        [ -z "$m3u8_url" ] && exit 0
+        [ -z "${m3u8_url}" ] && exit 0
 
-        play "$m3u8_url"
+        play "${m3u8_url}"
     done
 }
 
