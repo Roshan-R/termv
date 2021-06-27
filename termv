@@ -103,29 +103,31 @@ if [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)
 fi
 
 play()(
-    if [ -n "$1" ]; then
+    if [ -n "$2" ]; then
         pht "Fetching channel, please wait..."
         if [ "${SWALLOW}" = true ]; then
             WID=$(xdo id)
             xdo hide
-            mpv "$1" ${MPV_FLAGS} --force-window=immediate
+            mpv "$2" ${MPV_FLAGS} --force-media-title="$1" --force-window=immediate
             xdo show "$WID" && xdo activate "$WID"
         else
-            mpv "$1" ${MPV_FLAGS}
+            mpv "$2" ${MPV_FLAGS} --force-media-title="$1"
         fi
     fi
 )
 
 main(){
     while :; do
-        m3u8_url=$(jq -r '.[] | "\(.name) \t [\(.category)]  [\(.languages|.[0].name)]  [\(.countries|.[0].name)]  \(.url)"' "${termv_cache_dir}/data.json" | \
-                fzf -e -i --reverse --cycle --with-nth='1..-2' --tabstop=40 --header="Select channel (press Escape to exit)" -q "$@" | \
-                awk '{print $NF}' \
+        chosen_item=$(jq -r '.[] | "\(.name) \t [\(.category)]  [\(.languages|.[0].name)]  [\(.countries|.[0].name)]  \(.url)"' "${termv_cache_dir}/data.json" | \
+                fzf -e -i --reverse --cycle --with-nth='1..-2' --tabstop=40 --header="Select channel (press Escape to exit)" -q "$@" \
                 )
 
-        [ -z "${m3u8_url}" ] && exit 0
+        [ -z "${chosen_item}" ] && exit 0
 
-        play "${m3u8_url}"
+        item_name=$(echo "${chosen_item}" | awk '{split($0,a," \t "); print a[1];}')
+        item_url=$(echo "${chosen_item}" | awk '{print $NF}')
+
+        play "${item_name}" "${item_url}"
     done
 }
 
