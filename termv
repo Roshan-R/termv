@@ -6,6 +6,8 @@ termv_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 
 channels_url="https://iptv-org.github.io/iptv/channels.json"
 
+AUTO_UPDATE=true
+
 FULL_SCREEN=false
 
 SWALLOW=false
@@ -64,11 +66,11 @@ update_channelsfile(){
         printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
     elif [ ${downloaded} -eq 1 ]; then
         mv -f "${termv_cache_dir:?}/data.json_new" "${termv_cache_dir:?}/data.json"
-        printf '\033[32;1m %s \033[0m\n' "DONE !!" ;
+        printf '\033[32;1m %s \033[0m\n' "done !!" ;
     elif [ ${downloaded} -eq 0 ]; then
         rm -f "${etagPath:?}" "${termv_cache_dir:?}/data.json_new"
         echo "${oldetag}" > "${etagPath}"
-        printf '\033[31;1m %s \033[0m\n' "Fail !!"
+        printf '\033[31;1m %s \033[0m\n' "fail !!"
         exit 1
     fi
 }
@@ -93,16 +95,14 @@ done
 
 [ -z "${query}" ] && query=""
 
-[ "${SWALLOW}" = true ] && { ! has "xdo" && pemx "You have a missing dependencie for -s flag. you need to install: xdo."; }
+[ "${SWALLOW}" = true ] && { ! has "xdo" && pemx "You have a missing dependencie for '-s' flag. you need to install: xdo."; }
 
 [ "${FULL_SCREEN}" = true ] && MPV_FLAGS="${MPV_FLAGS} --fs"
 
 # update channel list if it's older than one day
-if [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] ; then
-    update_channelsfile
-fi
+[ "${AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
-play()(
+_play()(
     if [ -n "$2" ]; then
         pht "Fetching channel, please wait..."
         if [ "${SWALLOW}" = true ]; then
@@ -118,7 +118,7 @@ play()(
 
 main(){
     while :; do
-        chosen_item=$(jq -r '.[] | "\(.name) \t [\(.category)]  [\(.languages|.[0].name)]  [\(.countries|.[0].name)]  \(.url)"' "${termv_cache_dir}/data.json" | \
+        chosen_item=$(jq -r '.[] | "\(.name) \t [\(.category // "Unsorted")]  [\(.languages|.[0].name // "Unsorted")]  [\(.countries|.[0].name // "Unsorted")]  \(.url)"' "${termv_cache_dir}/data.json" | \
                 fzf -e -i --reverse --cycle --with-nth='1..-2' --tabstop=40 --header="Select channel (press Escape to exit)" -q "$@" \
                 )
 
@@ -127,7 +127,7 @@ main(){
         item_name=$(echo "${chosen_item}" | awk '{split($0,a," \t "); print a[1];}')
         item_url=$(echo "${chosen_item}" | awk '{print $NF}')
 
-        play "${item_name}" "${item_url}"
+        _play "${item_name}" "${item_url}"
     done
 }
 
