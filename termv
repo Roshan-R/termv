@@ -1,120 +1,159 @@
 #!/usr/bin/env bash
 
-VERSION=1.0
+VERSION=1.2
+TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
+TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
+TERMV_SWALLOW=${TERMV_SWALLOW:-false}
+TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
+TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
+TERMV_API_URL="https://iptv-org.github.io/iptv/channels.json"
 
-CHANNEL_FILE="$HOME/.config/termv/channels.json"
+mkdir -p "${TERMV_CACHE_DIR:?}"
 
-FULL_SCREEN=false
+has() {
+    case "$(command -v "$1" 2>/dev/null)" in
+        alias*|"") return 1
+    esac
+}
 
-SWALLOW=false
+_phi() {
+    >&2 printf '    %s\n' "$1"
+}
 
-MPV_FLAGS="--no-resume-playback"
+_pht() {
+    >&2 printf '%s\n' "$@"
+}
 
-play(){
-    if [ -n "$1" ]; then
-        printf "Fetching channel, please wait...\n"
-        [ "$FULL_SCREEN" = true ] && MPV_FLAGS="$MPV_FLAGS --fs"
-        if type xdo >/dev/null 2>&1 && [ "$SWALLOW" = true ]; then
+# print error message & exit
+_pemx() {
+    >&2 printf '\033[31;1merror :\033[m %s\n' "$1"
+    exit 1
+}
+
+version() {
+    _pht "$(basename "$0") $VERSION"
+}
+
+usage() {
+    _pht "Usage:   $(basename "$0") [OPTIONS] query"
+    _pht
+    _pht "Options:"
+    _pht "  General Options:"
+    _phi "-h, --help                Print this help text and exit."
+    _phi "-v, --version             Print program version and exit."
+    _phi "-u, --update              Update channel list to latest version."
+    _pht
+    _pht "  Player Options:"
+    _phi "-f, --full-screen         Open mpv in fullscreen."
+    _phi "-s, --swallow             Swallow terminal during playback (X11 only) based on devour; https://github.com/salman-abedin/devour.sh"
+    _pht
+    _pht "  Environment variables:  "
+    _phi "TERMV_AUTO_UPDATE         Auto update channel list to latest version. (default: true)"
+    _phi "TERMV_SWALLOW             Alwayse swallow terminal during playback. (default: false)"
+    _phi "TERMV_FULL_SCREEN         Alwayse open mpv in fullscreen. (default: false)"
+    _phi "TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)"
+    _pht
+    _pht "  Improve me on GitHub:"
+    _phi "https://github.com/Roshan-R/termv"
+}
+
+update_channelsfile() {
+    etagPath="${TERMV_CACHE_DIR:?}/etag"
+    printf '%s' "Downloading ${TERMV_API_URL:?}... "
+    [ -f "${etagPath:?}" ] && oldetag=$(<"${etagPath}") || oldetag="null"
+
+    curl -s "${TERMV_API_URL}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${TERMV_CACHE_DIR:?}/data.json_new" \
+    -H "accept-encoding:gzip" --compressed && downloaded=1 || downloaded=0
+
+    newetag=$(<"${etagPath}")
+
+    if [ ${downloaded} -eq 1 ] && [ "${newetag}" = "${oldetag}" ]; then
+        touch "${TERMV_CACHE_DIR:?}/data.json" ;
+        printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
+    elif [ ${downloaded} -eq 1 ]; then
+        mv -f "${TERMV_CACHE_DIR:?}/data.json_new" "${TERMV_CACHE_DIR:?}/data.json"
+        printf '\033[32;1m %s \033[0m\n' "done !!" ;
+    elif [ ${downloaded} -eq 0 ]; then
+        rm -f "${etagPath:?}" "${TERMV_CACHE_DIR:?}/data.json_new"
+        echo "${oldetag}" > "${etagPath}"
+        printf '\033[31;1m %s \033[0m\n' "fail !!"
+        exit 1
+    fi
+}
+
+# check if necessary programs are installed
+for prog in mpv fzf jq curl gawk; do
+     ! has "$prog" && dependences_not_installed="${dependences_not_installed}${prog}, "
+done
+
+[ -n "${dependences_not_installed}" ] && _pemx "You have missing dependencies. you need to install: ${dependences_not_installed%??}."
+
+while [ "$1" ]; do
+    case "$1" in
+        "-h"|"--help")
+            usage ; exit 0 ;;
+        "-v"|"--version")
+            version ; exit 0 ;;
+        "-u"|"--update")
+            update_channelsfile ; exit ;;
+
+        "-f"|"--full-screen")
+            TERMV_FULL_SCREEN=true   ; shift ;;
+        "-s"|"--swallow")
+            TERMV_SWALLOW=true       ; shift ;;
+
+        "--")
+            shift ; break ;;
+        -*)
+            _pemx "$1 in not a supported option" ;;
+        *)  
+            break ;;
+    esac
+done
+
+[ "${TERMV_SWALLOW}" = true ] && { ! has "xdo" && _pemx "You have a missing dependencie for '-s' flag. you need to install: xdo."; }
+
+[ "${TERMV_FULL_SCREEN}" = true ] && TERMV_MPV_FLAGS="${TERMV_MPV_FLAGS} --fs"
+
+[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
+
+CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "Unsorted") \t \(.languages|.[0].name // "Unsorted") \t \(.countries|.[0].name // "Unsorted") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
+                gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
+                    {
+                      name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
+                      category = substr(gensub(/\s+> (.*)/, "\\1", "g", $2),0,max/8)
+                      languages = substr(gensub(/\s+> (.*)/, "\\1", "g", $3),0,max/8)
+                      countries = substr(gensub(/\s+> (.*)/, "\\1", "g", $4),0,70)
+                      channelUrl = substr(gensub(/\s+> (.*)/, "\\1", "g", $5),0)
+                      print name "\t|" category "\t|" languages "\t|" countries "\t" channelUrl
+                    }' | column -t -s $'\t' \
+                )
+
+_play() {
+    if [ -n "$2" ]; then
+        _pht "Fetching channel, please wait..."
+        if [ "${TERMV_SWALLOW}" = true ]; then
             WID=$(xdo id)
             xdo hide
-            mpv "$1" "$MPV_FLAGS" --force-window=immediate --force-media-title="$name"
-            xdo show $WID && xdo activate $WID
+            # shellcheck disable=SC2086
+            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1" --force-window=immediate
+            xdo show "$WID" && xdo activate "$WID"
         else
-            mpv "$1" "$MPV_FLAGS" --force-media-title="$name"
+            # shellcheck disable=SC2086
+            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1"
         fi
     fi
 }
 
-select_channel(){
-    local fzf_opts=(--cycle --header="Select channel (press Escape to exit)")
-    local name var
-    while name=$(cat "$CHANNEL_FILE" | jq ".[].name" | tr -d '"' |\
-                 sort | fzf "${fzf_opts[@]}"); do
-        var=".[] | select(.name==\"$name\") | .url"
-        play "$(cat $CHANNEL_FILE | jq "$var" | tr -d '"')"
-    done
-}
+while :; do
+    chosen_item=$(printf '%s\n' "${CHANNELS_LIST}" |\
+                  fzf -e -i --reverse --cycle --with-nth='1..-2' --header="Select channel (press Escape to exit)" -q "${*:-}" \
+                 )
 
-dep_check(){
-    deps=(mpv fzf jq wget cat)
-    for dep in ${deps[@]}; do
-        command -v "$dep" 1>/dev/null || missing="$missing $dep"
-    done;
+    [ -z "${chosen_item}" ] && exit 0
 
-    deps_extra=(xdo)
-    for depext in ${deps_extra[@]}; do
-        command -v "$depext" 1>/dev/null || missing_extra="$missing_extra $depext"
-    done;
+    item_name=$(echo "${chosen_item}" | awk '{split($0,a,"|"); print a[1];}')
+    item_url=$(echo "${chosen_item}"  | awk '{print $NF}')
 
-    if [ -n "$missing" ]; then
-        printf "Please install missing dep(s):$missing\n";
-        exit 1
-    fi
-
-    if [ -n "$missing_extra" ] && [ "$SWALLOW" = true ]; then
-        printf "Please install missing dependency for -s flag:$missing_extra\n";
-        exit 1
-    fi
-
-    mkdir -p "${CHANNEL_FILE%channels.json}"
-
-    if [[ ! -f "$CHANNEL_FILE" ]];then
-        printf "Downloading channel list...\n";
-        wget -q --show-progress https://iptv-org.github.io/iptv/channels.json -O "$CHANNEL_FILE" ||\
-            print_error "Cannot download channel list"
-    fi
-
-    select_channel
-}
-
-print_error() {
-    # Print error message
-    #
-    # The first argument provided to this function will be the error message.
-    # Script will exit after printing the error message.
-    printf "%b\n" "Error: $1" >&2
-    exit 1
-}
-
-usage() {
-    # Using 'cat << EOF' we can easily output a multiline text. This is much
-    # better than using 'echo' for each line or using '\n' to create a new line.
-
-
-    cat <<EOF
-termv
-
-A command line program to watch TV online.
-
--f, --full-screen
-        Open mpv in fullscreen
--h, --help
-        Show help
--s, --swallow
-        Swallow terminal during playback (X11 only)
-        based on devour, https://github.com/salman-abedin/devour.sh
--v, --version
-        Show version
-EOF
-}
-
-version(){
-    printf "termv $VERSION"
-}
-
-main(){
-    [ $# -eq 0 ] && dep_check && exit
-
-    while [ "$1" ]; do
-        case "$1" in
-            --help | -h) usage && exit ;;
-            --version | -v) version && exit ;;
-            --full-screen | -f) FULL_SCREEN=true && dep_check;;
-            --swallow | -s) SWALLOW=true && dep_check;;
-            -*) print_error "option '$1' does not exist" ;;
-        esac
-        shift
-    done
-}
-
-main "$@"
+    _play "${item_name%${item_name##*[![:space:]]}}" "${item_url:?}"
+done
