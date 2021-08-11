@@ -1,74 +1,81 @@
 #!/usr/bin/env sh
 
-VERSION=1.1
+VERSION=1.2
+TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
+TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
+TERMV_SWALLOW=${TERMV_SWALLOW:-false}
+TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
+TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
+TERMV_API_URL="https://iptv-org.github.io/iptv/channels.json"
 
-termv_cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
+mkdir -p "${TERMV_CACHE_DIR:?}"
 
-channels_url="https://iptv-org.github.io/iptv/channels.json"
-
-AUTO_UPDATE=true
-
-FULL_SCREEN=false
-
-SWALLOW=false
-
-MPV_FLAGS="--no-resume-playback"
-
-mkdir -p "${termv_cache_dir:?}"
-
-# check if app installed ; ignores aliases
 has() {
     case "$(command -v "$1" 2>/dev/null)" in
         alias*|"") return 1
     esac
 }
 
-phi() {
-    >&2 printf "    %s , %s %s\n" "$1" "$2" "$3"
+_phi() {
+    >&2 printf '    %s\n' "$1"
 }
 
-pht() {
-    >&2 printf "%s\n" "$@"
+_pht() {
+    >&2 printf '%s\n' "$@"
 }
 
 # print error message & exit
-pemx() {
-    >&2 printf '\033[31;1merror :\033[m %s\n' "$@" && exit 1
+_pemx() {
+    >&2 printf '\033[31;1merror :\033[m %s\n' "$1"
+    exit 1
+}
+
+version() {
+    _pht "$(basename "$0") $VERSION"
 }
 
 usage() {
-    pht "Usage:   termv -option [filter]"
-    pht
-    pht "Options:"
-
-    phi -h "--help       " "Print this help text and exit"
-    phi -v "--version    " "Print program version and exit"
-    phi -u "--update     " "Update channel list to latest version."
-    phi -f "--full-screen" "open mpv in fullscreen"
-    phi -s "--swallow    " "Swallow terminal during playback (X11 only) based on devour; https://github.com/salman-abedin/devour.sh"
+    _pht "Usage:   $(basename "$0") [OPTIONS] query"
+    _pht
+    _pht "Options:"
+    _pht "  General Options:"
+    _phi "-h, --help                Print this help text and exit."
+    _phi "-v, --version             Print program version and exit."
+    _phi "-u, --update              Update channel list to latest version."
+    _pht
+    _pht "  Player Options:"
+    _phi "-f, --full-screen         Open mpv in fullscreen."
+    _phi "-s, --swallow             Swallow terminal during playback (X11 only) based on devour; https://github.com/salman-abedin/devour.sh"
+    _pht
+    _pht "  Environment variables:  "
+    _phi "TERMV_AUTO_UPDATE         Auto update channel list to latest version. (default: true)"
+    _phi "TERMV_SWALLOW             Alwayse swallow terminal during playback. (default: false)"
+    _phi "TERMV_FULL_SCREEN         Alwayse open mpv in fullscreen. (default: false)"
+    _phi "TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)"
+    _pht
+    _pht "  Improve me on GitHub:"
+    _phi "https://github.com/Roshan-R/termv"
 }
 
-version(){
-    pht "termv ${VERSION}"
-}
+update_channelsfile() {
+    etagPath="${TERMV_CACHE_DIR:?}/etag"
+    printf '%s' "Downloading ${TERMV_API_URL:?}... "
+    [ -f "${etagPath:?}" ] && oldetag=$(<"${etagPath}") || oldetag="null"
 
-update_channelsfile(){
-    etagPath="${termv_cache_dir:?}/etag"
-    printf '%s' "Downloading ${channels_url:?}... "
-    [ -f "${etagPath:?}" ] && oldetag=$(cat "${etagPath}") || oldetag="null"
-
-    curl -s "${channels_url}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${termv_cache_dir}/data.json_new" \
+    curl -s "${TERMV_API_URL}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${TERMV_CACHE_DIR:?}/data.json_new" \
     -H "accept-encoding:gzip" --compressed && downloaded=1 || downloaded=0
 
-    newetag=$(cat "${etagPath}")
+    newetag=$(<"${etagPath}")
+
     if [ ${downloaded} -eq 1 ] && [ "${newetag}" = "${oldetag}" ]; then
-        touch "${termv_cache_dir:?}/data.json" ;
+        touch "${TERMV_CACHE_DIR:?}/data.json" ;
         printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
     elif [ ${downloaded} -eq 1 ]; then
-        mv -f "${termv_cache_dir:?}/data.json_new" "${termv_cache_dir:?}/data.json"
+        mv -f "${TERMV_CACHE_DIR:?}/data.json_new" "${TERMV_CACHE_DIR:?}/data.json"
         printf '\033[32;1m %s \033[0m\n' "done !!" ;
     elif [ ${downloaded} -eq 0 ]; then
-        rm -f "${etagPath:?}" "${termv_cache_dir:?}/data.json_new"
+        rm -f "${etagPath:?}" "${TERMV_CACHE_DIR:?}/data.json_new"
+
         echo "${oldetag}" > "${etagPath}"
         printf '\033[31;1m %s \033[0m\n' "fail !!"
         exit 1
@@ -76,59 +83,78 @@ update_channelsfile(){
 }
 
 # check if necessary programs are installed
-for prog in mpv fzf jq curl cat; do
+for prog in mpv fzf jq curl gawk; do
      ! has "$prog" && dependences_not_installed="${dependences_not_installed}${prog}, "
 done
 
-[ -n "${dependences_not_installed}" ] && pemx "You have missing dependencies. you need to install: ${dependences_not_installed%??}."
+[ -n "${dependences_not_installed}" ] && _pemx "You have missing dependencies. you need to install: ${dependences_not_installed%??}."
 
 while [ "$1" ]; do
     case "$1" in
-        -h|--help) usage && exit 0 ;;
-        -v|--version) version && exit 0 ;;
-        -u|--update)  update_channelsfile ; exit;;
-        -f|--full-screen) FULL_SCREEN=true ; shift;;
-        -s|--swallow )    SWALLOW=true     ; shift;;
-        *) query="${query}$1 " ; shift;;
+        "-h"|"--help")
+            usage ; exit 0 ;;
+        "-v"|"--version")
+            version ; exit 0 ;;
+        "-u"|"--update")
+            update_channelsfile ; exit ;;
+
+        "-f"|"--full-screen")
+            TERMV_FULL_SCREEN=true   ; shift ;;
+        "-s"|"--swallow")
+            TERMV_SWALLOW=true       ; shift ;;
+
+        "--")
+            shift ; break ;;
+        -*)
+            _pemx "$1 in not a supported option" ;;
+        *)  
+            break ;;
     esac
 done
 
-[ -z "${query}" ] && query=""
+[ "${TERMV_SWALLOW}" = true ] && { ! has "xdo" && _pemx "You have a missing dependencie for '-s' flag. you need to install: xdo."; }
 
-[ "${SWALLOW}" = true ] && { ! has "xdo" && pemx "You have a missing dependencie for '-s' flag. you need to install: xdo."; }
+[ "${TERMV_FULL_SCREEN}" = true ] && TERMV_MPV_FLAGS="${TERMV_MPV_FLAGS} --fs"
 
-[ "${FULL_SCREEN}" = true ] && MPV_FLAGS="${MPV_FLAGS} --fs"
+[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
-# update channel list if it's older than one day
-[ "${AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${termv_cache_dir}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
-
-_play()(
-    if [ -n "$2" ]; then
-        pht "Fetching channel, please wait..."
-        if [ "${SWALLOW}" = true ]; then
-            WID=$(xdo id)
-            xdo hide
-            mpv "$2" ${MPV_FLAGS} --force-media-title="$1" --force-window=immediate
-            xdo show "$WID" && xdo activate "$WID"
-        else
-            mpv "$2" ${MPV_FLAGS} --force-media-title="$1"
-        fi
-    fi
-)
-
-main(){
-    while :; do
-        chosen_item=$(jq -r '.[] | "\(.name) \t [\(.category // "Unsorted")]  [\(.languages|.[0].name // "Unsorted")]  [\(.countries|.[0].name // "Unsorted")]  \(.url)"' "${termv_cache_dir}/data.json" | \
-                fzf -e -i --reverse --cycle --with-nth='1..-2' --tabstop=40 --header="Select channel (press Escape to exit)" -q "$@" \
+CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "Unsorted") \t \(.languages|.[0].name // "Unsorted") \t \(.countries|.[0].name // "Unsorted") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
+                gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
+                    {
+                      name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
+                      category = substr(gensub(/\s+> (.*)/, "\\1", "g", $2),0,max/8)
+                      languages = substr(gensub(/\s+> (.*)/, "\\1", "g", $3),0,max/8)
+                      countries = substr(gensub(/\s+> (.*)/, "\\1", "g", $4),0,70)
+                      channelUrl = substr(gensub(/\s+> (.*)/, "\\1", "g", $5),0)
+                      print name "\t|" category "\t|" languages "\t|" countries "\t" channelUrl
+                    }' | column -t -s $'\t' \
                 )
 
-        [ -z "${chosen_item}" ] && exit 0
-
-        item_name=$(echo "${chosen_item}" | awk '{split($0,a," \t "); print a[1];}')
-        item_url=$(echo "${chosen_item}" | awk '{print $NF}')
-
-        _play "${item_name}" "${item_url}"
-    done
+_play() {
+    if [ -n "$2" ]; then
+        _pht "Fetching channel, please wait..."
+        if [ "${TERMV_SWALLOW}" = true ]; then
+            WID=$(xdo id)
+            xdo hide
+            # shellcheck disable=SC2086
+            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1" --force-window=immediate
+            xdo show "$WID" && xdo activate "$WID"
+        else
+            # shellcheck disable=SC2086
+            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1"
+        fi
+    fi
 }
 
-main "$query"
+while :; do
+    chosen_item=$(printf '%s\n' "${CHANNELS_LIST}" |\
+                  fzf -e -i --reverse --cycle --with-nth='1..-2' --header="Select channel (press Escape to exit)" -q "${*:-}" \
+                 )
+
+    [ -z "${chosen_item}" ] && exit 0
+
+    item_name=$(echo "${chosen_item}" | awk '{split($0,a,"|"); print a[1];}')
+    item_url=$(echo "${chosen_item}"  | awk '{print $NF}')
+
+    _play "${item_name%${item_name##*[![:space:]]}}" "${item_url:?}"
+done
