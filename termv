@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 VERSION=1.2
 TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
@@ -75,6 +75,7 @@ update_channelsfile() {
         printf '\033[32;1m %s \033[0m\n' "done !!" ;
     elif [ ${downloaded} -eq 0 ]; then
         rm -f "${etagPath:?}" "${TERMV_CACHE_DIR:?}/data.json_new"
+
         echo "${oldetag}" > "${etagPath}"
         printf '\033[31;1m %s \033[0m\n' "fail !!"
         exit 1
