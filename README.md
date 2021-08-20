@@ -5,7 +5,7 @@
 <p align="center">A terminal iptv player written in bash</p><br>
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/43182697/115673983-d6c49380-a36a-11eb-9b62-f7166adbb0e2.gif">
+  <img src="https://user-images.githubusercontent.com/43182697/129660097-60d91974-06ff-4d11-869d-6ddc6c1aff75.gif">
 </p>
 
 `termv` is a small bash script that allows you to select an iptv stream using `fzf` and play it using `mpv`.
@@ -14,8 +14,9 @@ the list of channels is obtained from [https://github.com/iptv-org/iptv](https:/
 
 
 ## Dependencies
-- `wget`
+- `curl`
 - `mpv`
+- `gawk`
 - [`jq`](https://github.com/stedolan/jq)
 - [`fzf`](https://github.com/junegunn/fzf)
 - `xdo` (optional, for `-s` flag)
@@ -23,19 +24,26 @@ the list of channels is obtained from [https://github.com/iptv-org/iptv](https:/
 ## Usage
 
 ```console
-termv
+Usage:   termv [OPTIONS] query
 
-A command line program to watch TV online.
+Options:
+  General Options:
+    -h, --help                Print this help text and exit.
+    -v, --version             Print program version and exit.
+    -u, --update              Update channel list to latest version.
 
--f, --full-screen 
-        Open mpv in fullscreen
--h, --help
-        Show help
--s, --swallow
-        Swallow terminal during playback (X11 only)
-        based on devour, https://github.com/salman-abedin/devour.sh
--v, --version
-        Show version
+  Player Options:
+    -f, --full-screen         Open mpv in fullscreen.
+    -s, --swallow             Swallow terminal during playback (X11 only) based on devour; https://github.com/salman-abedin/devour.sh
+
+  Environment variables:  
+    TERMV_AUTO_UPDATE         Auto update channel list to latest version. (default: true)
+    TERMV_SWALLOW             Alwayse swallow terminal during playback. (default: false)
+    TERMV_FULL_SCREEN         Alwayse open mpv in fullscreen. (default: false)
+    TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)
+
+  Improve me on GitHub:
+    https://github.com/Roshan-R/termv
 ```
 
 ## Installation
