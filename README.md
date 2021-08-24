@@ -38,8 +38,8 @@ Options:
 
   Environment variables:  
     TERMV_AUTO_UPDATE         Auto update channel list to latest version. (default: true)
-    TERMV_SWALLOW             Alwayse swallow terminal during playback. (default: false)
-    TERMV_FULL_SCREEN         Alwayse open mpv in fullscreen. (default: false)
+    TERMV_SWALLOW             Always swallow terminal during playback. (default: false)
+    TERMV_FULL_SCREEN         Always open mpv in fullscreen. (default: false)
     TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)
 
   Improve me on GitHub:
