@@ -1,12 +1,13 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 VERSION=1.2
+BASH_BINARY="$(which bash)"
 TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
-TERMV_SWALLOW=${TERMV_SWALLOW:-false}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
-TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
 TERMV_API_URL="https://iptv-org.github.io/iptv/channels.json"
+declare -x TERMV_SWALLOW=${TERMV_SWALLOW:-false}
+declare -x TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
 
 mkdir -p "${TERMV_CACHE_DIR:?}"
 
@@ -75,7 +76,6 @@ update_channelsfile() {
         printf '\033[32;1m %s \033[0m\n' "done !!" ;
     elif [ ${downloaded} -eq 0 ]; then
         rm -f "${etagPath:?}" "${TERMV_CACHE_DIR:?}/data.json_new"
-
         echo "${oldetag}" > "${etagPath}"
         printf '\033[31;1m %s \033[0m\n' "fail !!"
         exit 1
@@ -107,7 +107,7 @@ while [ "$1" ]; do
             shift ; break ;;
         -*)
             _pemx "$1 in not a supported option" ;;
-        *)  
+        *)
             break ;;
     esac
 done
@@ -131,30 +131,24 @@ CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "Unsorted") \t \(.langu
                 )
 
 _play() {
-    if [ -n "$2" ]; then
-        _pht "Fetching channel, please wait..."
-        if [ "${TERMV_SWALLOW}" = true ]; then
-            WID=$(xdo id)
-            xdo hide
-            # shellcheck disable=SC2086
-            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1" --force-window=immediate
-            xdo show "$WID" && xdo activate "$WID"
-        else
-            # shellcheck disable=SC2086
-            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1"
-        fi
+    printf '%s\n' "Fetching channel, please wait..."
+    if [ "${TERMV_SWALLOW}" = true ]; then
+        WID=$(xdo id)
+        xdo hide
+        # shellcheck disable=SC2086
+        mpv "${*##* }" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}" --force-window=immediate
+        xdo show "$WID" && xdo activate "$WID"
+    else
+        # shellcheck disable=SC2086
+        mpv "${*##* }" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}"
     fi
 }
 
-while :; do
-    chosen_item=$(printf '%s\n' "${CHANNELS_LIST}" |\
-                  fzf -e -i --reverse --cycle --with-nth='1..-2' --header="Select channel (press Escape to exit)" -q "${*:-}" \
-                 )
+export -f _play
 
-    [ -z "${chosen_item}" ] && exit 0
-
-    item_name=$(echo "${chosen_item}" | awk '{split($0,a,"|"); print a[1];}')
-    item_url=$(echo "${chosen_item}"  | awk '{print $NF}')
-
-    _play "${item_name%${item_name##*[![:space:]]}}" "${item_url:?}"
-done
+SHELL="${BASH_BINARY}" \
+            fzf -e -i --reverse --cycle --with-nth="1..-2"\
+            --bind "enter:execute(_play {})"\
+            --bind "double-click:execute(_play {})"\
+            --header="Select channel (press Escape to exit)" -q "${*:-}" \
+            < <( printf '%s\n' "${CHANNELS_LIST}" )
