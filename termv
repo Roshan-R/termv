@@ -1,12 +1,13 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 VERSION=1.2
+BASH_BINARY="$(which bash)"
 TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
-TERMV_SWALLOW=${TERMV_SWALLOW:-false}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
-TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
 TERMV_API_URL="https://iptv-org.github.io/iptv/channels.json"
+declare -x TERMV_SWALLOW=${TERMV_SWALLOW:-false}
+declare -x TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
 
 mkdir -p "${TERMV_CACHE_DIR:?}"
 
@@ -69,25 +70,24 @@ update_channelsfile() {
 
     if [ ${downloaded} -eq 1 ] && [ "${newetag}" = "${oldetag}" ]; then
         touch "${TERMV_CACHE_DIR:?}/data.json" ;
-        printf '\033[33;1m %s \033[0m\n' "not modified!!" ;
+        printf '\033[33;1m %s \033[0m\n' "Your version is already up to date." ;
     elif [ ${downloaded} -eq 1 ]; then
         mv -f "${TERMV_CACHE_DIR:?}/data.json_new" "${TERMV_CACHE_DIR:?}/data.json"
-        printf '\033[32;1m %s \033[0m\n' "done !!" ;
+        printf '\033[32;1m %s \033[0m\n' "Done!" ;
     elif [ ${downloaded} -eq 0 ]; then
         rm -f "${etagPath:?}" "${TERMV_CACHE_DIR:?}/data.json_new"
-
         echo "${oldetag}" > "${etagPath}"
-        printf '\033[31;1m %s \033[0m\n' "fail !!"
+        printf '\033[31;1m %s \033[0m\n' "Uh oh, failed!"
         exit 1
     fi
 }
 
 # check if necessary programs are installed
 for prog in mpv fzf jq curl gawk; do
-     ! has "$prog" && dependences_not_installed="${dependences_not_installed}${prog}, "
+     ! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
-[ -n "${dependences_not_installed}" ] && _pemx "You have missing dependencies. you need to install: ${dependences_not_installed%??}."
+[ -n "${dependencies_not_installed}" ] && _pemx "Missing dependencies, please install: ${dependencies_not_installed%??}."
 
 while [ "$1" ]; do
     case "$1" in
@@ -107,18 +107,18 @@ while [ "$1" ]; do
             shift ; break ;;
         -*)
             _pemx "$1 in not a supported option" ;;
-        *)  
+        *)
             break ;;
     esac
 done
 
-[ "${TERMV_SWALLOW}" = true ] && { ! has "xdo" && _pemx "You have a missing dependencie for '-s' flag. you need to install: xdo."; }
+[ "${TERMV_SWALLOW}" = true ] && { ! has "xdo" && _pemx "Dependency missing for '-s' flag, please install xdo."; }
 
 [ "${TERMV_FULL_SCREEN}" = true ] && TERMV_MPV_FLAGS="${TERMV_MPV_FLAGS} --fs"
 
 [ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
-CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "Unsorted") \t \(.languages|.[0].name // "Unsorted") \t \(.countries|.[0].name // "Unsorted") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
+CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "n/a") \t \(.languages|.[0].name // "n/a") \t \(.countries|.[0].name // "n/a") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
                 gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
                     {
                       name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
@@ -131,30 +131,24 @@ CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "Unsorted") \t \(.langu
                 )
 
 _play() {
-    if [ -n "$2" ]; then
-        _pht "Fetching channel, please wait..."
-        if [ "${TERMV_SWALLOW}" = true ]; then
-            WID=$(xdo id)
-            xdo hide
-            # shellcheck disable=SC2086
-            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1" --force-window=immediate
-            xdo show "$WID" && xdo activate "$WID"
-        else
-            # shellcheck disable=SC2086
-            mpv "$2" ${TERMV_MPV_FLAGS} --force-media-title="$1"
-        fi
+    printf '%s\n' "Fetching channel, please wait..."
+    if [ "${TERMV_SWALLOW}" = true ]; then
+        WID=$(xdo id)
+        xdo hide
+        # shellcheck disable=SC2086
+        mpv "${*##* }" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}" --force-window=immediate
+        xdo show "$WID" && xdo activate "$WID"
+    else
+        # shellcheck disable=SC2086
+        mpv "${*##* }" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}"
     fi
 }
 
-while :; do
-    chosen_item=$(printf '%s\n' "${CHANNELS_LIST}" |\
-                  fzf -e -i --reverse --cycle --with-nth='1..-2' --header="Select channel (press Escape to exit)" -q "${*:-}" \
-                 )
+export -f _play
 
-    [ -z "${chosen_item}" ] && exit 0
-
-    item_name=$(echo "${chosen_item}" | awk '{split($0,a,"|"); print a[1];}')
-    item_url=$(echo "${chosen_item}"  | awk '{print $NF}')
-
-    _play "${item_name%${item_name##*[![:space:]]}}" "${item_url:?}"
-done
+SHELL="${BASH_BINARY}" \
+            fzf -e -i --reverse --cycle --with-nth="1..-2"\
+            --bind "enter:execute(_play {})"\
+            --bind "double-click:execute(_play {})"\
+            --header="Select channel (press Escape to exit)" -q "${*:-}" \
+            < <( printf '%s\n' "${CHANNELS_LIST}" )
