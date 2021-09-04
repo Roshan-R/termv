@@ -79,5 +79,7 @@ yay -S termv-git
 ```
 
 ## Credits
+A big thank you to all the [`contributors`](https://github.com/Roshan-R/termv/graphs/contributors)
+
 Thanks to [`ytfzf`](https://github.com/pystardust/ytfzf) for the Makefile and
 [`tmpmail`](https://github.com/sdushantha/tmpmail) as a reference on how to structure bash scripts. 
