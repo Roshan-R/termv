@@ -53,6 +53,19 @@ Options:
 sudo wget -O /usr/local/bin/termv -q --show-progress https://raw.githubusercontent.com/Roshan-R/termv/main/termv && sudo chmod +x /usr/local/bin/termv
 ```
 
+### Arch Linux
+
+Install from the AUR (with your preferred AUR helper)
+```sh
+yay -S termv-git
+```
+
+### Nix
+Users of the Nix package manager with [`flakes`](https://nixos.wiki/wiki/Flakes) support can execute termv using 
+```sh
+nix run github:Roshan-R/termv
+```
+
 ### Installation by cloning the repository
 
 ```sh
@@ -70,12 +83,6 @@ sudo make install
 
 ```sh
 sudo make uninstall
-```
-
-+ **Arch Linux: Install from the AUR (with your preferred AUR helper)**
-
-```sh
-yay -S termv-git
 ```
 
 ## Credits
