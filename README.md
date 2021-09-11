@@ -66,6 +66,14 @@ Users of the Nix package manager with [`flakes`](https://nixos.wiki/wiki/Flakes)
 nix run github:Roshan-R/termv
 ```
 
+### MacOS
+For MacOs users with the homebrew package manager
+
+```
+brew tap Roshan-R/termv https://github.com/Roshan-R/homebrew-termv
+brew install termv
+```
+
 ### Installation by cloning the repository
 
 ```sh
