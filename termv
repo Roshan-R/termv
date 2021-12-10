@@ -153,7 +153,7 @@ export -f _playbg
 
 SHELL="${BASH_BINARY}" \
             fzf -e -i --reverse --cycle --with-nth="1..-2"\
-                --bind "alt-enter:execute-silent(_playbg {})"\
+                --bind "alt-]:execute-silent(_playbg {})"\
                 --bind "enter:execute(_play {})"\
                 --bind "double-click:execute(_play {})"\
                 --header="Select channel (press Escape to exit)" -q "${*:-}" \
