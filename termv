@@ -118,7 +118,7 @@ done
 
 [ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
-CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "n/a") \t \(.languages|.[0].name // "n/a") \t \(.countries|.[0].name // "n/a") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
+CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "N/A") \t \(.languages|.[0].name // "N/A") \t \(.countries|.[0].name // "N/A") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
                 gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
                     {
                       name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
@@ -144,11 +144,17 @@ _play() {
     fi
 }
 
+_playbg() {
+    { setsid -f mpv "${*##* }" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}" --force-window=immediate >/dev/null 2>&1 ; }
+}
+
 export -f _play
+export -f _playbg
 
 SHELL="${BASH_BINARY}" \
             fzf -e -i --reverse --cycle --with-nth="1..-2"\
-            --bind "enter:execute(_play {})"\
-            --bind "double-click:execute(_play {})"\
-            --header="Select channel (press Escape to exit)" -q "${*:-}" \
+                --bind "alt-]:execute-silent(_playbg {})"\
+                --bind "enter:execute(_play {})"\
+                --bind "double-click:execute(_play {})"\
+                --header="Select channel (press Escape to exit)" -q "${*:-}" \
             < <( printf '%s\n' "${CHANNELS_LIST}" )
