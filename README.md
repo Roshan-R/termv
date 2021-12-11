@@ -57,7 +57,7 @@ sudo wget -O /usr/local/bin/termv -q --show-progress https://raw.githubuserconte
 
 Install from the AUR (with your preferred AUR helper)
 ```sh
-yay -S termv-git
+yay -S termv
 ```
 
 ### Nix
