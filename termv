@@ -102,7 +102,8 @@ while [ "$1" ]; do
             TERMV_FULL_SCREEN=true   ; shift ;;
         "-s"|"--swallow")
             TERMV_SWALLOW=true       ; shift ;;
-
+        "--nsfw")
+            NSFW=true       ; shift ;;
         "--")
             shift ; break ;;
         -*)
@@ -118,6 +119,8 @@ done
 
 [ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
+if [ "${NSFW}" = true ];then
+
 CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "N/A") \t \(.languages|.[0].name // "N/A") \t \(.countries|.[0].name // "N/A") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
                 gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
                     {
@@ -129,6 +132,21 @@ CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "N/A") \t \(.languages|
                       print name "\t|" category "\t|" languages "\t|" countries "\t" channelUrl
                     }' | column -t -s $'\t' \
                 )
+else
+
+CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(select(.category | index("XXX") | not).category ) \t \(.languages|.[0].name // "N/A") \t \(.countries|.[0].name // "N/A") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
+                gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
+                    {
+                      name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
+                      category = substr(gensub(/\s+> (.*)/, "\\1", "g", $2),0,max/8)
+                      languages = substr(gensub(/\s+> (.*)/, "\\1", "g", $3),0,max/8)
+                      countries = substr(gensub(/\s+> (.*)/, "\\1", "g", $4),0,70)
+                      channelUrl = substr(gensub(/\s+> (.*)/, "\\1", "g", $5),0)
+                      print name "\t|" category "\t|" languages "\t|" countries "\t" channelUrl
+                    }' | column -t -s $'\t' \
+                )
+fi
+
 
 _play() {
     printf '%s\n' "Fetching channel, please wait..."
