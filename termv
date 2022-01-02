@@ -118,7 +118,7 @@ done
 
 [ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
-CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.category // "N/A") \t \(.languages|.[0].name // "N/A") \t \(.countries|.[0].name // "N/A") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
+CHANNELS_LIST=$(jq -r '.[] | "\(.name) \t \(.categories[].name // "N/A") \t \(.languages|.[0].name // "N/A") \t \(.countries|.[0].name // "N/A") \t \(.url)"' "${TERMV_CACHE_DIR:?}/data.json" |\
                 gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
                     {
                       name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
