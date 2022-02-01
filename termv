@@ -6,7 +6,7 @@ TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
 TERMV_API_URL="https://iptv-org.github.io/iptv/channels.json"
-FZF_VERSION=$(fzf --version | cut -d '.' -f 2-)
+FZF_VERSION=$(fzf --version | cut -d '.' -f 2- | cut -d ' ' -f 1 )
 declare -x TERMV_SWALLOW=${TERMV_SWALLOW:-false}
 declare -x TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
 
@@ -151,6 +151,8 @@ _playbg() {
 
 export -f _play
 export -f _playbg
+
+echo "$FZF_VERSION"
 
 if [ $(echo "$FZF_VERSION < 25.0" | bc) == 1 ];then
 SHELL="${BASH_BINARY}" \
