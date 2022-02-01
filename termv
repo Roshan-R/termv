@@ -152,8 +152,6 @@ _playbg() {
 export -f _play
 export -f _playbg
 
-echo "$FZF_VERSION"
-
 if [ $(echo "$FZF_VERSION < 25.0" | bc) == 1 ];then
 SHELL="${BASH_BINARY}" \
             fzf -e -i --reverse --cycle --with-nth="1..-2"\
