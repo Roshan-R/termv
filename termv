@@ -84,7 +84,7 @@ update_channelsfile() {
 }
 
 # check if necessary programs are installed
-for prog in mpv fzf jq curl gawk; do
+for prog in bc mpv fzf jq curl gawk; do
      ! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
