@@ -152,19 +152,12 @@ _playbg() {
 export -f _play
 export -f _playbg
 
-if [ $(echo "$FZF_VERSION < 25.0" | bc) == 1 ];then
+[ $(echo "$FZF_VERSION < 25.0" | bc) == 1 ] || TERMV_ALT_BRACKET_BIND="--bind" && TERMV_ALT_BRACKET="alt-]:execute-silent(_playbg {})"
+
 SHELL="${BASH_BINARY}" \
             fzf -e -i --reverse --cycle --with-nth="1..-2"\
+                "$TERMV_ALT_BRACKET_BIND" "$TERMV_ALT_BRACKET" \
                 --bind "enter:execute(_play {})"\
                 --bind "double-click:execute(_play {})"\
                 --header="Select channel (press Escape to exit)" -q "${*:-}" \
             < <( printf '%s\n' "${CHANNELS_LIST}" )
-else
-SHELL="${BASH_BINARY}" \
-            fzf -e -i --reverse --cycle --with-nth="1..-2"\
-                --bind "alt-]:execute-silent(_playbg {})"\
-                --bind "enter:execute(_play {})"\
-                --bind "double-click:execute(_play {})"\
-                --header="Select channel (press Escape to exit)" -q "${*:-}" \
-            < <( printf '%s\n' "${CHANNELS_LIST}" )
-fi
