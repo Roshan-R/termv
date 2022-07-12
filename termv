@@ -84,7 +84,9 @@ update_channelsfile() {
 }
 
 # check if necessary programs are installed
-for prog in mpv fzf jq curl gawk; do
+DEPENDENCIES="fzf jq curl gawk"
+[ "$(uname -o)" != "Android" ] && DEPENDENCIES="mpv ${DEPENDENCIES}"
+for prog in ${DEPENDENCIES}; do
      ! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
@@ -139,6 +141,8 @@ _play() {
         # shellcheck disable=SC2086
         mpv "${*##* }" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}" --force-window=immediate
         xdo show "$WID" && xdo activate "$WID"
+    elif [ "$(uname -o)" == "Android"  ]; then
+        am start -n is.xyz.mpv/is.xyz.mpv.MPVActivity -e filepath "${*##* }"
     else
         # shellcheck disable=SC2086
         mpv "${*##* }" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}"
