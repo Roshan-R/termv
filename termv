@@ -117,7 +117,10 @@ done
 
 [ "${TERMV_FULL_SCREEN}" = true ] && TERMV_MPV_FLAGS="${TERMV_MPV_FLAGS} --fs"
 
-[[ -n "${TERMV_CATEGORY}" ]] && echo "Chosen category: $TERMV_CATEGORY" && TERMV_FILTER="| select(.categories[0].name == \"$TERMV_CATEGORY\")"
+TERMV_FILTER=""
+[[ -n "${TERMV_CATEGORY}" ]] && echo "Chosen category: $TERMV_CATEGORY" && TERMV_FILTER="$TERMV_FILTER | select(.categories[0].name == \"$TERMV_CATEGORY\")"
+[[ -n "${TERMV_LANGUAGE}" ]] && echo "Chosen language: $TERMV_LANGUAGE" && TERMV_FILTER="$TERMV_FILTER | select(.languages[0].name == \"$TERMV_LANGUAGE\")"
+[[ -n "${TERMV_COUNTRY}" ]] && echo "Chosen country: $TERMV_COUNTRY" && TERMV_FILTER="$TERMV_FILTER | select(.countries[0].name == \"$TERMV_COUNTRY\")"
 
 [ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
