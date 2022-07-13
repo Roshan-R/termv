@@ -117,7 +117,6 @@ done
 
 [ "${TERMV_FULL_SCREEN}" = true ] && TERMV_MPV_FLAGS="${TERMV_MPV_FLAGS} --fs"
 
-TERMV_FILTER=""
 [[ -n "${TERMV_CATEGORY}" ]] && echo "Chosen category: $TERMV_CATEGORY" && TERMV_FILTER="$TERMV_FILTER | select(.categories[0].name == \"$TERMV_CATEGORY\")"
 [[ -n "${TERMV_LANGUAGE}" ]] && echo "Chosen language: $TERMV_LANGUAGE" && TERMV_FILTER="$TERMV_FILTER | select(.languages[0].name == \"$TERMV_LANGUAGE\")"
 [[ -n "${TERMV_COUNTRY}" ]] && echo "Chosen country: $TERMV_COUNTRY" && TERMV_FILTER="$TERMV_FILTER | select(.countries[0].name == \"$TERMV_COUNTRY\")"
