@@ -51,8 +51,8 @@ usage() {
     _pht
     _pht "  Environment variables:  "
     _phi "TERMV_AUTO_UPDATE         Auto update channel list to latest version. (default: true)"
-    _phi "TERMV_SWALLOW             Alwayse swallow terminal during playback. (default: false)"
-    _phi "TERMV_FULL_SCREEN         Alwayse open mpv in fullscreen. (default: false)"
+    _phi "TERMV_SWALLOW             Always swallow terminal during playback. (default: false)"
+    _phi "TERMV_FULL_SCREEN         Always open mpv in fullscreen. (default: false)"
     _phi "TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)"
     _pht
     _pht "  Improve me on GitHub:"
