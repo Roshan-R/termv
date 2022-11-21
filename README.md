@@ -41,6 +41,8 @@ Options:
     TERMV_SWALLOW             Always swallow terminal during playback. (default: false)
     TERMV_FULL_SCREEN         Always open mpv in fullscreen. (default: false)
     TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)
+    TERMV_API_URL             URL to the channel list. (default: https://iptv-org.github.io/iptv/channels.json)
+                              Any other URL must be in the same format as the default one.
 
   Improve me on GitHub:
     https://github.com/Roshan-R/termv
