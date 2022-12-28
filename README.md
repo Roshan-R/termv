@@ -10,7 +10,8 @@
 
 `termv` is a small bash script that allows you to select an iptv stream using `fzf` and play it using `mpv`.
 
-the list of channels is obtained from [https://github.com/iptv-org/iptv](https://github.com/iptv-org/iptv)
+The list of channels is obtained from [https://github.com/iptv-org/iptv](https://github.com/iptv-org/iptv)
+For an example for a custom channels list and how to make one yourself, visit [this gist](https://gist.github.com/Roshan-R/7eddda0789297d86219fda21876b2632) 
 
 
 ## Dependencies
@@ -41,6 +42,8 @@ Options:
     TERMV_SWALLOW             Always swallow terminal during playback. (default: false)
     TERMV_FULL_SCREEN         Always open mpv in fullscreen. (default: false)
     TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)
+    TERMV_API_URL             URL to the channel list. (default: https://iptv-org.github.io/iptv/channels.json)
+                              Any other URL must be in the same format as the default one.
 
   Improve me on GitHub:
     https://github.com/Roshan-R/termv

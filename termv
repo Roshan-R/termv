@@ -5,8 +5,10 @@ BASH_BINARY="$(which bash)"
 TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
-TERMV_API_URL="https://iptv-org.github.io/iptv/channels.json"
+TERMV_API_URL=${TERMV_API_URL:-"https://iptv-org.github.io/iptv/channels.json"}
+
 FZF_VERSION=$(fzf --version | cut -d '.' -f 2- | cut -d ' ' -f 1 )
+
 declare -x TERMV_SWALLOW=${TERMV_SWALLOW:-false}
 declare -x TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
 
@@ -54,7 +56,8 @@ usage() {
     _phi "TERMV_SWALLOW             Always swallow terminal during playback. (default: false)"
     _phi "TERMV_FULL_SCREEN         Always open mpv in fullscreen. (default: false)"
     _phi "TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)"
-    _pht
+    _phi "TERMV_API_URL             URL to the channel list. (default: https://iptv-org.github.io/iptv/channels.json)"
+    _phi "                          Any other URL must be in the same format as the default one."
     _pht "  Improve me on GitHub:"
     _phi "https://github.com/Roshan-R/termv"
 }
