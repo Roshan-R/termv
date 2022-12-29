@@ -80,6 +80,9 @@ brew tap Roshan-R/termv https://github.com/Roshan-R/homebrew-termv
 brew install termv
 ```
 
+### Android
+For Android users with [termux](https://termux.org/) and [mpv-android](https://github.com/mpv-android/mpv-android) installed, it is possible to direct install to a folder in the path
+
 ### Installation by cloning the repository
 
 ```sh
