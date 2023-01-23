@@ -5,7 +5,7 @@ BASH_BINARY="$(which bash)"
 TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
-TERMV_API_URL=${TERMV_API_URL:-"https://iptv-org.github.io/iptv/channels.json"}
+TERMV_API_URL=${TERMV_API_URL:-"https://iptv-org.github.io/api/channels.json"}
 
 FZF_VERSION=$(fzf --version | cut -d '.' -f 2- | cut -d ' ' -f 1 )
 
@@ -56,7 +56,7 @@ usage() {
     _phi "TERMV_SWALLOW             Always swallow terminal during playback. (default: false)"
     _phi "TERMV_FULL_SCREEN         Always open mpv in fullscreen. (default: false)"
     _phi "TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)"
-    _phi "TERMV_API_URL             URL to the channel list. (default: https://iptv-org.github.io/iptv/channels.json)"
+    _phi "TERMV_API_URL             URL to the channel list. (default: https://iptv-org.github.io/api/channels.json)"
     _phi "                          Any other URL must be in the same format as the default one."
     _pht "  Improve me on GitHub:"
     _phi "https://github.com/Roshan-R/termv"
@@ -126,7 +126,7 @@ done
 
 [ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
 
-CHANNELS_LIST=$(jq -r ".[] $TERMV_FILTER | \"\(.name) \t \(.categories[].name // \"N/A\") \t \(.languages|.[0].name // \"N/A\") \t \(.countries|.[0].name // \"N/A\") \t \(.url)\"" "${TERMV_CACHE_DIR:?}/data.json" |\
+CHANNELS_LIST=$(jq -r ".[] $TERMV_FILTER | \"\(.name) \t \(.categories[] // \"N/A\") \t \(.languages|.[0] // \"N/A\") \t \(.countries|.[0] // \"N/A\") \t \(.url)\"" "${TERMV_CACHE_DIR:?}/data.json" |\
                 gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
                     {
                       name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
