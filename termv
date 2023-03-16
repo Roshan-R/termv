@@ -70,7 +70,7 @@ merge_json_files() {
     jq 'unique_by (.channel) | map({id: .channel, url})' "${TERMV_CACHE_DIR:?}/streams_data.json" > "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" 
     jq 'map({id, name, categories, is_nsfw, languages, country})' "${TERMV_CACHE_DIR:?}/channels_data.json" > "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
     jq -s 'add | group_by(.id) | map(add)' "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" "${TERMV_CACHE_DIR:?}/tmp_channels_data.json" | jq 'map(select ( .url != null ))' >  "${TERMV_CACHE_DIR:?}/data.json" 
-    sed -e '2,5d' -i "${TERMV_CACHE_DIR:?}/data.json"
+    gawk 'NR<2 || NR>5' "${TERMV_CACHE_DIR:?}/data.json" > temp.json && mv temp.json "${TERMV_CACHE_DIR:?}/data.json"
     rm "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" 
     rm "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
 }
@@ -133,7 +133,7 @@ update_streamsfiles() {
 }
 
 # check if necessary programs are installed
-for prog in mpv fzf jq curl gawk sed; do
+for prog in mpv fzf jq curl gawk ; do
      ! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
