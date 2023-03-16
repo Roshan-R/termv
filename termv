@@ -71,6 +71,8 @@ merge_json_files() {
     jq 'map({id, name, categories, is_nsfw, languages, country})' "${TERMV_CACHE_DIR:?}/channels_data.json" > "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
     jq -s 'add | group_by(.id) | map(add)' "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" "${TERMV_CACHE_DIR:?}/tmp_channels_data.json" | jq 'map(select ( .url != null ))' >  "${TERMV_CACHE_DIR:?}/data.json" 
     sed -e '2,5d' -i "${TERMV_CACHE_DIR:?}/data.json"
+    rm "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" 
+    rm "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
 }
 
 update_jsonfiles(){
