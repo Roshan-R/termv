@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
-VERSION=1.3
+VERSION=1.4
 BASH_BINARY="$(which bash)"
 TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
-TERMV_API_URL=${TERMV_API_URL:-"https://iptv-org.github.io/iptv/channels.json"}
+
+TERMV_CHANNELS_URL=${TERMV_CHANNELS_URL:-"https://iptv-org.github.io/api/channels.json"}
+TERMV_STREAMS_URL=${TERMV_STREAMS_URL:-"https://iptv-org.github.io/api/streams.json"}
 
 FZF_VERSION=$(fzf --version | cut -d '.' -f 2- | cut -d ' ' -f 1 )
 
@@ -56,38 +58,82 @@ usage() {
     _phi "TERMV_SWALLOW             Always swallow terminal during playback. (default: false)"
     _phi "TERMV_FULL_SCREEN         Always open mpv in fullscreen. (default: false)"
     _phi "TERMV_DEFAULT_MPV_FLAGS   Default arguments which are passed to mpv. (default: --no-resume-playback)"
-    _phi "TERMV_API_URL             URL to the channel list. (default: https://iptv-org.github.io/iptv/channels.json)"
+    _phi "TERMV_CHANNELS_URL             URL to the channel list. (default: https://iptv-org.github.io/api/channels.json)"
+    _phi "                          Any other URL must be in the same format as the default one."
+    _phi "TERMV_STREAMS_URL             URL to the streams list. (default: https://iptv-org.github.io/api/streams.json)"
     _phi "                          Any other URL must be in the same format as the default one."
     _pht "  Improve me on GitHub:"
     _phi "https://github.com/Roshan-R/termv"
 }
 
+merge_json_files() {
+    jq 'unique_by (.channel) | map({id: .channel, url})' "${TERMV_CACHE_DIR:?}/streams_data.json" > "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" 
+    jq 'map({id, name, categories, is_nsfw, languages, country})' "${TERMV_CACHE_DIR:?}/channels_data.json" > "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
+    jq -s 'add | group_by(.id) | map(add)' "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" "${TERMV_CACHE_DIR:?}/tmp_channels_data.json" | jq 'map(select ( .url != null ))' >  "${TERMV_CACHE_DIR:?}/data.json" 
+    gawk 'NR<2 || NR>5' "${TERMV_CACHE_DIR:?}/data.json" > temp.json && mv temp.json "${TERMV_CACHE_DIR:?}/data.json"
+    rm "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" 
+    rm "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
+}
+
+update_jsonfiles(){
+    update_channelsfile
+    update_streamsfiles
+    merge_json_files
+}
+
 update_channelsfile() {
-    etagPath="${TERMV_CACHE_DIR:?}/etag"
-    printf '%s' "Downloading ${TERMV_API_URL:?}... "
-    [ -f "${etagPath:?}" ] && oldetag=$(<"${etagPath}") || oldetag="null"
 
-    curl -s "${TERMV_API_URL}" --etag-compare "${etagPath:?}" --etag-save "${etagPath:?}" -o "${TERMV_CACHE_DIR:?}/data.json_new" \
-    -H "accept-encoding:gzip" --compressed && downloaded=1 || downloaded=0
+    channelsEtagpath="${TERMV_CACHE_DIR:?}/channels_etag"
+    printf '%s' "Downloading ${TERMV_CHANNELS_URL:?}... "
+    [ -f "${channelsEtagpath:?}" ] && oldChannelsetag=$(<"${channelsEtagpath}") || oldChannelsetag="null"
 
-    newetag=$(<"${etagPath}")
+    curl -s "${TERMV_CHANNELS_URL}" --etag-compare "${channelsEtagpath:?}" --etag-save "${channelsEtagpath:?}" -o "${TERMV_CACHE_DIR:?}/channels_data.json_new" \
+    -H "accept-encoding:gzip" --compressed && channelsDownloaded=1 || channelsDownloaded=0
 
-    if [ ${downloaded} -eq 1 ] && [ "${newetag}" = "${oldetag}" ]; then
-        touch "${TERMV_CACHE_DIR:?}/data.json" ;
+    newChannelsetag=$(<"${channelsEtagpath}")
+
+    if [ ${channelsDownloaded} -eq 1 ] && [ "${newChannelsetag}" = "${oldChannelsetag}" ]; then
+        touch "${TERMV_CACHE_DIR:?}/channels_data.json" ;
         printf '\033[33;1m %s \033[0m\n' "Your version is already up to date." ;
-    elif [ ${downloaded} -eq 1 ]; then
-        mv -f "${TERMV_CACHE_DIR:?}/data.json_new" "${TERMV_CACHE_DIR:?}/data.json"
+    elif [ ${channelsDownloaded} -eq 1 ]; then
+      mv -f "${TERMV_CACHE_DIR:?}/channels_data.json_new" "${TERMV_CACHE_DIR:?}/channels_data.json"
         printf '\033[32;1m %s \033[0m\n' "Done!" ;
-    elif [ ${downloaded} -eq 0 ]; then
-        rm -f "${etagPath:?}" "${TERMV_CACHE_DIR:?}/data.json_new"
-        echo "${oldetag}" > "${etagPath}"
+    elif [ ${channelsDownloaded} -eq 0 ]; then
+        rm -f "${channelsEtagpath:?}" "${TERMV_CACHE_DIR:?}/channels_data.json_new"
+        echo "${oldChannelsetag}" > "${channelsEtagpath}"
         printf '\033[31;1m %s \033[0m\n' "Uh oh, failed!"
         exit 1
     fi
 }
 
+update_streamsfiles() {
+
+    streamsEtagpath="${TERMV_CACHE_DIR:?}/streams_etag"
+    printf '%s' "Downloading ${TERMV_STREAMS_URL:?}... "
+    [ -f "${streamsEtagpath:?}" ] && oldStreamsetag=$(<"${streamsEtagpath}") || oldStreamsetag="null"
+
+    curl -s "${TERMV_STREAMS_URL}" --etag-compare "${streamsEtagpath:?}" --etag-save "${streamsEtagpath:?}" -o "${TERMV_CACHE_DIR:?}/streams_data.json_new" \
+    -H "accept-encoding:gzip" --compressed && streamsDownloaded=1 || streamsDownloaded=0
+
+    newStreamsetag=$(<"${streamsEtagpath}")
+
+    if [ ${streamsDownloaded} -eq 1 ] && [ "${newStreamsetag}" = "${oldStreamsetag}" ]; then
+        touch "${TERMV_CACHE_DIR:?}/streams_data.json" ;
+        printf '\033[33;1m %s \033[0m\n' "Your version is already up to date." ;
+    elif [ ${streamsDownloaded} -eq 1 ]; then
+      mv -f "${TERMV_CACHE_DIR:?}/streams_data.json_new" "${TERMV_CACHE_DIR:?}/streams_data.json"
+        printf '\033[32;1m %s \033[0m\n' "Done!" ;
+    elif [ ${streamsDownloaded} -eq 0 ]; then
+        rm -f "${streamsEtagpath:?}" "${TERMV_CACHE_DIR:?}/streams_data.json_new"
+        echo "${oldStreamsetag}" > "${streamsEtagpath}"
+        printf '\033[31;1m %s \033[0m\n' "Uh oh, failed!"
+        exit 1
+    fi
+
+}
+
 # check if necessary programs are installed
-for prog in mpv fzf jq curl gawk; do
+for prog in mpv fzf jq curl gawk ; do
      ! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
@@ -100,8 +146,7 @@ while [ "$1" ]; do
         "-v"|"--version")
             version ; exit 0 ;;
         "-u"|"--update")
-            update_channelsfile ; exit ;;
-
+            update_jsonfiles ; exit ;;
         "-f"|"--full-screen")
             TERMV_FULL_SCREEN=true   ; shift ;;
         "-s"|"--swallow")
@@ -124,9 +169,11 @@ done
 [[ -n "${TERMV_LANGUAGE}" ]] && echo "Chosen language: $TERMV_LANGUAGE" && TERMV_FILTER="$TERMV_FILTER | select(.languages[0].name == \"$TERMV_LANGUAGE\")"
 [[ -n "${TERMV_COUNTRY}" ]] && echo "Chosen country: $TERMV_COUNTRY" && TERMV_FILTER="$TERMV_FILTER | select(.countries[0].name == \"$TERMV_COUNTRY\")"
 
-[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
+[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/channels_data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
+[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/streams_data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_streamsfiles ; }
 
-CHANNELS_LIST=$(jq -r ".[] $TERMV_FILTER | \"\(.name) \t \(.categories[].name // \"N/A\") \t \(.languages|.[0].name // \"N/A\") \t \(.countries|.[0].name // \"N/A\") \t \(.url)\"" "${TERMV_CACHE_DIR:?}/data.json" |\
+
+CHANNELS_LIST=$(jq -r ".[] $TERMV_FILTER | \"\(.name) \t \(.categories[]? // \"N/A\") \t \(.languages[]? // \"N/A\") \t \(.country? // \"N/A\") \t \(.url)\"" "${TERMV_CACHE_DIR:?}/data.json" |\
                 gawk -v max="${COLUMNS:-80}" 'BEGIN { RS="\n"; FS=" \t " }
                     {
                       name = substr(gensub(/[0-9]+\.\s*(.*)/, "\\1", "g", $1),0,max/4)
