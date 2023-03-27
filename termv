@@ -169,8 +169,8 @@ done
 [[ -n "${TERMV_LANGUAGE}" ]] && echo "Chosen language: $TERMV_LANGUAGE" && TERMV_FILTER="$TERMV_FILTER | select(.languages[0].name == \"$TERMV_LANGUAGE\")"
 [[ -n "${TERMV_COUNTRY}" ]] && echo "Chosen country: $TERMV_COUNTRY" && TERMV_FILTER="$TERMV_FILTER | select(.countries[0].name == \"$TERMV_COUNTRY\")"
 
-[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/channels_data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_channelsfile ; }
-[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/streams_data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_streamsfiles ; }
+[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/channels_data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_jsonfiles ; }
+[ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/streams_data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_jsonfiles ; }
 
 
 CHANNELS_LIST=$(jq -r ".[] $TERMV_FILTER | \"\(.name) \t \(.categories[]? // \"N/A\") \t \(.languages[]? // \"N/A\") \t \(.country? // \"N/A\") \t \(.url)\"" "${TERMV_CACHE_DIR:?}/data.json" |\
