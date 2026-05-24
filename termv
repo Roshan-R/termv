@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 VERSION=1.4
-BASH_BINARY="$(which bash)"
+BASH_BINARY="$(command -v bash)"
 TERMV_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/termv"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
@@ -133,7 +133,7 @@ update_streamsfiles() {
 }
 
 # check if necessary programs are installed
-for prog in mpv fzf jq curl gawk ; do
+for prog in mpv fzf jq curl gawk bc; do
      ! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
@@ -151,7 +151,6 @@ while [ "$1" ]; do
             TERMV_FULL_SCREEN=true   ; shift ;;
         "-s"|"--swallow")
             TERMV_SWALLOW=true       ; shift ;;
-
         "--")
             shift ; break ;;
         -*)
