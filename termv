@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=1.4
+VERSION=1.5
 BASH_BINARY="$(command -v bash)"
 TERMV_AUTO_UPDATE=${TERMV_AUTO_UPDATE:-true}
 TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
