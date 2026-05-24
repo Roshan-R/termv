@@ -30,10 +30,22 @@ _pht() {
 	printf >&2 '%s\n' "$@"
 }
 
+_p_warn(){
+    printf '\033[33;1m %s \033[0m\n' "$@"
+}
+
+_p_success(){
+	printf '\033[32;1m %s \033[0m\n' "$@"
+}
+
+_p_fail(){
+	printf '\033[31;1m %s \033[0m\n' "$@"
+	exit 1
+}
+
 # print error message & exit
 _pemx() {
-	printf >&2 '\033[31;1merror :\033[m %s\n' "$1"
-	exit 1
+    _p_fail "error : $1"
 }
 
 version() {
@@ -75,59 +87,38 @@ merge_json_files() {
 }
 
 update_jsonfiles() {
-	update_channelsfile
-	update_streamsfiles
+	update_file "channels" "${TERMV_CHANNELS_URL}"
+	update_file "streams" "${TERMV_STREAMS_URL}"
 	merge_json_files
 }
 
-update_channelsfile() {
-	channelsEtagpath="${TERMV_CACHE_DIR:?}/channels_etag"
-	printf '%s' "Downloading ${TERMV_CHANNELS_URL:?}... "
-	[ -f "${channelsEtagpath:?}" ] && oldChannelsetag=$(<"${channelsEtagpath}") || oldChannelsetag="null"
+update_file() {
+    name="$1"
+    url="$2"
 
-	curl -s "${TERMV_CHANNELS_URL}" --etag-compare "${channelsEtagpath:?}" --etag-save "${channelsEtagpath:?}" -o "${TERMV_CACHE_DIR:?}/channels_data.json_new" \
-		-H "accept-encoding:gzip" --compressed && channelsDownloaded=1 || channelsDownloaded=0
+	printf '%s' "Downloading ${url:?}... "
 
-	newChannelsetag=$(<"${channelsEtagpath}")
+	etagpath="${TERMV_CACHE_DIR:?}/${name}_etag"
+	[ -f "${etagpath:?}" ] && oldetag=$(<"${etagpath}") || oldetag="null"
 
-	if [ ${channelsDownloaded} -eq 1 ] && [ "${newChannelsetag}" = "${oldChannelsetag}" ]; then
-		touch "${TERMV_CACHE_DIR:?}/channels_data.json"
-		printf '\033[33;1m %s \033[0m\n' "Your version is already up to date."
-	elif [ ${channelsDownloaded} -eq 1 ]; then
-		mv -f "${TERMV_CACHE_DIR:?}/channels_data.json_new" "${TERMV_CACHE_DIR:?}/channels_data.json"
-		printf '\033[32;1m %s \033[0m\n' "Done!"
-	elif [ ${channelsDownloaded} -eq 0 ]; then
-		rm -f "${channelsEtagpath:?}" "${TERMV_CACHE_DIR:?}/channels_data.json_new"
-		echo "${oldChannelsetag}" >"${channelsEtagpath}"
-		printf '\033[31;1m %s \033[0m\n' "Uh oh, failed!"
-		exit 1
+	curl -s "${url}" --etag-compare "${etagpath:?}" \
+        --etag-save "${etagpath:?}" \
+        -o "${TERMV_CACHE_DIR:?}/${name}_data.json_new" \
+		-H "accept-encoding:gzip" --compressed && downloaded=1 || downloaded=0
+
+	newetag=$(<"${etagpath}")
+
+	if [ "${downloaded}" -eq 1 ] && [ "${newetag}" == "${oldetag}" ]; then
+		touch "${TERMV_CACHE_DIR:?}/${name}_data.json"
+		_p_warn "Your version is already up to date."
+	elif [ "${downloaded}" -eq 1 ]; then
+		mv -f "${TERMV_CACHE_DIR:?}/${name}_data.json_new" "${TERMV_CACHE_DIR:?}/${name}_data.json"
+		_p_success "Done!"
+	elif [ "${downloaded}" -eq 0 ]; then
+		rm -f "${etagpath:?}" "${TERMV_CACHE_DIR:?}/${name}_data.json_new"
+		echo "${oldetag}" >"${etagpath}"
+		_p_fail "Uh oh, failed!"
 	fi
-}
-
-update_streamsfiles() {
-
-	streamsEtagpath="${TERMV_CACHE_DIR:?}/streams_etag"
-	printf '%s' "Downloading ${TERMV_STREAMS_URL:?}... "
-	[ -f "${streamsEtagpath:?}" ] && oldStreamsetag=$(<"${streamsEtagpath}") || oldStreamsetag="null"
-
-	curl -s "${TERMV_STREAMS_URL}" --etag-compare "${streamsEtagpath:?}" --etag-save "${streamsEtagpath:?}" -o "${TERMV_CACHE_DIR:?}/streams_data.json_new" \
-		-H "accept-encoding:gzip" --compressed && streamsDownloaded=1 || streamsDownloaded=0
-
-	newStreamsetag=$(<"${streamsEtagpath}")
-
-	if [ ${streamsDownloaded} -eq 1 ] && [ "${newStreamsetag}" = "${oldStreamsetag}" ]; then
-		touch "${TERMV_CACHE_DIR:?}/streams_data.json"
-		printf '\033[33;1m %s \033[0m\n' "Your version is already up to date."
-	elif [ ${streamsDownloaded} -eq 1 ]; then
-		mv -f "${TERMV_CACHE_DIR:?}/streams_data.json_new" "${TERMV_CACHE_DIR:?}/streams_data.json"
-		printf '\033[32;1m %s \033[0m\n' "Done!"
-	elif [ ${streamsDownloaded} -eq 0 ]; then
-		rm -f "${streamsEtagpath:?}" "${TERMV_CACHE_DIR:?}/streams_data.json_new"
-		echo "${oldStreamsetag}" >"${streamsEtagpath}"
-		printf '\033[31;1m %s \033[0m\n' "Uh oh, failed!"
-		exit 1
-	fi
-
 }
 
 _play() {
