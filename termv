@@ -8,7 +8,9 @@ TERMV_FULL_SCREEN=${TERMV_FULL_SCREEN:-false}
 TERMV_CHANNELS_URL=${TERMV_CHANNELS_URL:-"https://iptv-org.github.io/api/channels.json"}
 TERMV_STREAMS_URL=${TERMV_STREAMS_URL:-"https://iptv-org.github.io/api/streams.json"}
 
-FZF_VERSION=$(fzf --version | cut -d '.' -f 2- | cut -d ' ' -f 1)
+FZF_VERSION_FULL=$(fzf --version)
+FZF_VERSION_MAJOR="${FZF_VERSION_FULL:0:1}"
+FZF_VERSION_MINOR="${FZF_VERSION_FULL:2:2}"
 
 declare -x TERMV_SWALLOW=${TERMV_SWALLOW:-false}
 declare -x TERMV_MPV_FLAGS="${TERMV_DEFAULT_MPV_FLAGS:---no-resume-playback}"
@@ -145,7 +147,7 @@ export -f _play
 export -f _playbg
 
 # check if necessary programs are installed
-for prog in mpv fzf jq curl bc; do
+for prog in mpv fzf jq curl cut column; do
 	! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
@@ -183,7 +185,8 @@ CHANNELS_LIST=$(
     jq -r '.[] | [.name, ("|"+.category), ("|"+.country), (.urls | join(","))] | @tsv' "${TERMV_CACHE_DIR:?}/data.json" | column -t -s $'\t'
 )
 
-if [ $(echo "$FZF_VERSION < 25.0" | bc) == 1 ]; then
+if (( "${FZF_VERSION_MINOR}" < 25 && "$FZF_VERSION_MAJOR" == 0)); then
+    # binding alt-] does not work in fzf version below 0.25.0
 	SHELL="${BASH_BINARY}" \
 		fzf -e -i --reverse --cycle --with-nth="1..-2" \
 		--bind "enter:execute(_play {})" \
