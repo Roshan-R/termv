@@ -32,22 +32,22 @@ _pht() {
 	printf >&2 '%s\n' "$@"
 }
 
-_p_warn(){
-    printf '\033[33;1m %s \033[0m\n' "$@"
+_p_warn() {
+	printf '\033[33;1m %s \033[0m\n' "$@"
 }
 
-_p_success(){
+_p_success() {
 	printf '\033[32;1m %s \033[0m\n' "$@"
 }
 
-_p_fail(){
+_p_fail() {
 	printf '\033[31;1m %s \033[0m\n' "$@"
 	exit 1
 }
 
 # print error message & exit
 _pemx() {
-    _p_fail "error : $1"
+	_p_fail "error : $1"
 }
 
 version() {
@@ -81,8 +81,8 @@ usage() {
 }
 
 merge_json_files() {
-	jq 'map(select(.channel != null)) | group_by(.channel) | map({id: .[0].channel, urls: [.[].url]})' "${TERMV_CACHE_DIR:?}/streams_data.json" > "${TERMV_CACHE_DIR:?}/tmp_streams_data.json"
-	jq 'map({id, name, category: (.categories[0] // "N/A"), is_nsfw, languages, country})' "${TERMV_CACHE_DIR:?}/channels_data.json" > "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
+	jq 'map(select(.channel != null)) | group_by(.channel) | map({id: .[0].channel, urls: [.[].url]})' "${TERMV_CACHE_DIR:?}/streams_data.json" >"${TERMV_CACHE_DIR:?}/tmp_streams_data.json"
+	jq 'map({id, name, category: (.categories[0] // "N/A"), is_nsfw, languages, country})' "${TERMV_CACHE_DIR:?}/channels_data.json" >"${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
 	jq -s 'add | group_by(.id) | map(add)' "${TERMV_CACHE_DIR:?}/tmp_streams_data.json" "${TERMV_CACHE_DIR:?}/tmp_channels_data.json" | jq 'map(select ( .urls != null ))' >"${TERMV_CACHE_DIR:?}/data.json"
 	rm "${TERMV_CACHE_DIR:?}/tmp_streams_data.json"
 	rm "${TERMV_CACHE_DIR:?}/tmp_channels_data.json"
@@ -95,8 +95,8 @@ update_jsonfiles() {
 }
 
 update_file() {
-    name="$1"
-    url="$2"
+	name="$1"
+	url="$2"
 
 	printf '%s' "Downloading ${url:?}... "
 
@@ -104,8 +104,8 @@ update_file() {
 	[ -f "${etagpath:?}" ] && oldetag=$(<"${etagpath}") || oldetag="null"
 
 	curl -s "${url}" --etag-compare "${etagpath:?}" \
-        --etag-save "${etagpath:?}" \
-        -o "${TERMV_CACHE_DIR:?}/${name}_data.json_new" \
+		--etag-save "${etagpath:?}" \
+		-o "${TERMV_CACHE_DIR:?}/${name}_data.json_new" \
 		-H "accept-encoding:gzip" --compressed && downloaded=1 || downloaded=0
 
 	newetag=$(<"${etagpath}")
@@ -125,8 +125,8 @@ update_file() {
 
 _play() {
 	printf '%s\n' "Fetching channel, please wait..."
-    LAST_STRING="${*##* }"
-    IFS=',' read -ra URLS <<< "$LAST_STRING"
+	LAST_STRING="${*##* }"
+	IFS=',' read -ra URLS <<<"$LAST_STRING"
 	if [ "${TERMV_SWALLOW}" = true ]; then
 		WID=$(xdo id)
 		xdo hide
@@ -182,11 +182,11 @@ done
 [ "${TERMV_AUTO_UPDATE}" = true ] && { [ ! "$(stat -c %y "${TERMV_CACHE_DIR:?}/streams_data.json" 2>/dev/null | cut -d' ' -f1)" = "$(date '+%Y-%m-%d')" ] && update_jsonfiles; }
 
 CHANNELS_LIST=$(
-    jq -r '.[] | [.name, ("|"+.category), ("|"+.country), (.urls | join(","))] | @tsv' "${TERMV_CACHE_DIR:?}/data.json" | column -t -s $'\t'
+	jq -r '.[] | [.name, ("|"+.category), ("|"+.country), (.urls | join(","))] | @tsv' "${TERMV_CACHE_DIR:?}/data.json" | column -t -s $'\t'
 )
 
-if (( "${FZF_VERSION_MINOR}" < 25 && "$FZF_VERSION_MAJOR" == 0)); then
-    # binding alt-] does not work in fzf version below 0.25.0
+if (("${FZF_VERSION_MINOR}" < 25 && "$FZF_VERSION_MAJOR" == 0)); then
+	# binding alt-] does not work in fzf version below 0.25.0
 	SHELL="${BASH_BINARY}" \
 		fzf -e -i --reverse --cycle --with-nth="1..-2" \
 		--bind "enter:execute(_play {})" \
