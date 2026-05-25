@@ -133,6 +133,8 @@ _play() {
 		# shellcheck disable=SC2086
 		mpv "${URLS[@]}" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}" --force-window=immediate
 		xdo show "$WID" && xdo activate "$WID"
+  elif [ "$(uname -o)" == "Android"  ]; then
+    am start -n is.xyz.mpv/is.xyz.mpv.MPVActivity -e filepath "${URLS[0]}"
 	else
 		# shellcheck disable=SC2086
 		mpv "${URLS[@]}" ${TERMV_MPV_FLAGS} --force-media-title="${*%%  *}"
@@ -147,8 +149,10 @@ export -f _play
 export -f _playbg
 
 # check if necessary programs are installed
-for prog in mpv fzf jq curl cut column; do
-	! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
+DEPENDENCIES="fzf jq curl cut column"
+[ "$(uname -o)" != "Android" ] && DEPENDENCIES="mpv ${DEPENDENCIES}"
+for prog in ${DEPENDENCIES}; do
+     ! has "$prog" && dependencies_not_installed="${dependencies_not_installed}${prog}, "
 done
 
 [ -n "${dependencies_not_installed}" ] && _pemx "Missing dependencies, please install: ${dependencies_not_installed%??}."
