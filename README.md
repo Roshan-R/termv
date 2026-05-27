@@ -20,7 +20,6 @@ For windows support, consider using [termv-rs](https://github.com/Roshan-R/termv
 ## Dependencies
 - `curl`
 - `mpv`
-- `gawk`
 - [`jq`](https://github.com/stedolan/jq)
 - [`fzf`](https://github.com/junegunn/fzf)
 - `xdo` (optional, for `-s` flag)
